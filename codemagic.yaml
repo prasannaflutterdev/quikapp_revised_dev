@@ -926,6 +926,8 @@ definitions:
         
         echo "Team ID: $APPLE_TEAM_ID"
         echo "Bundle ID: $BUNDLE_ID"
+        echo "PROFILE_NAME: $PROFILE_NAME"
+        echo "PROFILE_UUID: $PROFILE_UUID"
   
         # Step 8: Creating ExportOptions.plist
         echo "📝 Creating ExportOptions.plist..."
