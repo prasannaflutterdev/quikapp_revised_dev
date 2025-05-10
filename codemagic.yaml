@@ -912,18 +912,24 @@ definitions:
         echo "✅ Certificate is trusted for code signing."
 
         # Step 7: Install the provisioning profile
-        echo "📱 Installing provisioning profile..."
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-
-        # Extract UUID and Name from the provisioning profile correctly
-        PROFILE_UUID=$(grep -a -o '<key>UUID</key><string>[a-zA-Z0-9\-]*</string>' ios_certificates/profile.mobileprovision | sed -e 's/<[\/]*key>UUID<\/key><string>//g' -e 's/<[\/]*string>//g' | tr -d '[:space:]')
-        PROFILE_NAME=$(grep -a -o '<key>Name</key><string>[a-zA-Z0-9\- ]*</string>' ios_certificates/profile.mobileprovision | sed -e 's/<[\/]*key>Name<\/key><string>//g' -e 's/<[\/]*string>//g' | tr -d '[:space:]')
-
+        # Extract UUID and Name from the provisioning profile using PlistBuddy
+        echo "🔍 Extracting UUID and Name from the provisioning profile..."
+        PROFILE_PATH="~/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+        TEMP_PLIST="/tmp/profile.plist"
+        
+        # Decode the mobile provisioning file to a plist format
+        security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
+        
+        # Use PlistBuddy to extract UUID and Name
+        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
+        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
+        
         if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
-          echo "❌ Failed to extract UUID or Name from provisioning profile."
-          exit 1
+        echo "❌ Failed to extract UUID or Name from provisioning profile."
+        exit 1
         fi
-
+        
+        # Copy the provisioning profile to the correct location
         cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
         echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
 
