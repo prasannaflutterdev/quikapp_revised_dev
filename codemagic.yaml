@@ -1089,6 +1089,18 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
+      - name: Download provisioning profile
+        script: |
+          echo "⬇️ Downloading provisioning profile..."
+          curl -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
+          TEMP_PLIST="/tmp/profile.plist"
+          security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+          echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
+
       - name: Setting up keychain and code signing
         script: |
             echo "🔐 Setting up iOS signing (manual)..."
@@ -1099,36 +1111,61 @@ workflows:
             security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
             security find-identity -p codesigning build.keychain
 
-      - name: Download provisioning profile
-        script: |
-                echo "⬇️ Downloading provisioning profile..."
-                curl -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
-                TEMP_PLIST="/tmp/profile.plist"
-                security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
-                PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
-                PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
-                mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-                cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-                echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
 
       - name: Build iOS App with Xcode
         script: |
-                echo "🚀 Building iOS IPA..."
-                xcodebuild -workspace ios/Runner.xcworkspace \
-                  -scheme Runner \
-                  -configuration Release \
-                  -archivePath build/ios/archive/Runner.xcarchive \
-                  -sdk iphoneos \
-                  -allowProvisioningUpdates \
-                  -allowProvisioningDeviceRegistration \
-                  -destination 'generic/platform=iOS' \
-                  archive
-                xcodebuild -exportArchive \
-                  -archivePath build/ios/archive/Runner.xcarchive \
-                  -exportPath build/ios/ipa \
-                  -exportOptionsPlist ExportOptions.plist \
-                  -allowProvisioningUpdates
-                echo "✅ iOS IPA build completed."
+          echo "🚀 Building iOS IPA..."
+
+          # Create ExportOptions.plist
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          <key>method</key>
+          <string>${EXPORT_METHOD:-app-store}</string>
+          <key>signingStyle</key>
+          <string>manual</string>
+          <key>teamID</key>
+          <string>$APPLE_TEAM_ID</string>
+          <key>provisioningProfiles</key>
+          <dict>
+          <key>$BUNDLE_ID</key>
+          <string>$PROFILE_NAME</string>
+          </dict>
+          <key>signingCertificate</key>
+          <string>Apple Distribution</string>
+          <key>compileBitcode</key>
+          <true/>
+          <key>stripSwiftSymbols</key>
+          <true/>
+          <key>thinning</key>
+          <string>&lt;none&gt;</string>
+          </dict>
+          </plist>
+          EOF
+          echo "✅ ExportOptions.plist created."
+
+          # Build the archive
+          xcodebuild -workspace ios/Runner.xcworkspace \
+          -scheme Runner \
+          -configuration Release \
+          -archivePath build/ios/archive/Runner.xcarchive \
+          -sdk iphoneos \
+          -allowProvisioningUpdates \
+          -destination 'generic/platform=iOS' \
+          DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
+          archive
+
+          # Export the IPA
+          xcodebuild -exportArchive \
+          -archivePath build/ios/archive/Runner.xcarchive \
+          -exportPath build/ios/ipa \
+          -exportOptionsPlist ExportOptions.plist \
+          -allowProvisioningUpdates
+          echo "✅ iOS IPA build completed."
+          echo "✅ iOS IPA build completed."
+
 
       - name: Cleanup
         script: |
