@@ -886,70 +886,55 @@ definitions:
 
         # Step 4: Clean previous keychains
         echo "🧹 Cleaning previous keychains..."
-        security delete-keychain build.keychain 2>/dev/null
+        security delete-keychain build.keychain 2>/dev/null || true
 
         # Step 5: Create and configure the build keychain
         echo "🔑 Importing certificate into dedicated keychain..."
         security create-keychain -p "" build.keychain
         security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+        echo "🔑 Ensuring the certificate is accessible for code signing..."
         security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        echo "🔓 Unlocking the keychain..."
+        security unlock-keychain -p "" build.keychain
+        echo "🔧 Setting keychain settings..."
         security list-keychains -s build.keychain
         security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
 
-        echo "✅ Certificate imported."
-
-        # Step 6: Verify the certificate in the keychain
+        # Step 6: Verify the certificate
         echo "🔧 Verifying certificate in keychain..."
         security find-identity -p codesigning -v build.keychain
-
         VALID_IDENTITY_COUNT=$(security find-identity -p codesigning build.keychain | grep -cE 'iPhone (Developer|Distribution):')
         if [ "$VALID_IDENTITY_COUNT" -lt 1 ]; then
           echo "❌ No valid iOS code signing identity found in build.keychain."
           exit 1
         fi
 
-        echo "✅ Certificate is trusted for code signing."
-
-        # Step 7: Install the provisioning profile
-        # Extract UUID and Name from the provisioning profile using PlistBuddy
+        # Step 7: Extract UUID and Name from the provisioning profile
         echo "🔍 Extracting UUID and Name from the provisioning profile..."
-        PROFILE_PATH="~/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
         TEMP_PLIST="/tmp/profile.plist"
-        
-        # Decode the mobile provisioning file to a plist format
         security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
-        
-        # Use PlistBuddy to extract UUID and Name
         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
         PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
-        
-        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
-        echo "❌ Failed to extract UUID or Name from provisioning profile."
-        exit 1
-        fi
-        
-        # Copy the provisioning profile to the correct location
-        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-        echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
 
-        # Step 8: Verify the provisioning profile with Xcode
-        echo "🔎 Verifying provisioning profile in Xcode..."
-        if ! security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision > /dev/null 2>&1; then
-          echo "❌ Provisioning profile verification failed in Xcode."
+        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+          echo "❌ Failed to extract UUID or Name from provisioning profile."
           exit 1
         fi
-        echo "✅ Provisioning profile verified in Xcode."
 
-        # Step 9: Create ExportOptions.plist for ad-hoc or app-store build
+        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+        echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
+        
+        echo "Team ID: $APPLE_TEAM_ID"
+        echo "Bundle ID: $BUNDLE_ID"
+  
+        # Step 8: Creating ExportOptions.plist
         echo "📝 Creating ExportOptions.plist..."
         cat > ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <dict>
           <key>method</key>
-          <string>${EXPORT_METHOD:-ad-hoc}</string>
+          <string>${EXPORT_METHOD:-app-store}</string>
           <key>signingStyle</key>
           <string>manual</string>
           <key>provisioningProfiles</key>
@@ -959,6 +944,8 @@ definitions:
           </dict>
           <key>teamID</key>
           <string>$APPLE_TEAM_ID</string>
+          <key>signingCertificate</key>
+          <string>iPhone Distribution</string>
           <key>compileBitcode</key>
           <false/>
           <key>stripSwiftSymbols</key>
@@ -969,7 +956,134 @@ definitions:
         </plist>
         EOF
 
-        echo "✅ ExportOptions.plist configured."
+        # Step 9: Build the iOS IPA
+        echo "✅ Building iOS IPA..."
+        flutter build ipa \
+          --release \
+          --export-options-plist=ExportOptions.plist > flutter_build_ios.log
+        if [ $? -ne 0 ]; then
+          echo "❌ IPA build failed"
+          cat flutter_build_ios.log
+          exit 1
+        fi
+
+        echo "✅ IPA build completed successfully"
+
+        # Cleanup
+        echo "🧹 Cleaning up certificates and profiles..."
+        rm -rf ios_certificates
+        rm -f ExportOptions.plist
+        security delete-keychain build.keychain
+
+        echo "✅ Cleanup completed."
+        
+#        echo "🔐 Setting up iOS signing (manual)..."
+#
+#        # Step 1: Prepare the certificates directory
+#        mkdir -p ios_certificates
+#
+#        # Step 2: Download the .p12 certificate
+#        echo "⬇️ Downloading .p12 certificate..."
+#        curl -f -o ios_certificates/certificate.p12 "$CERT_URL"
+#        if [ $? -ne 0 ]; then
+#          echo "❌ Failed to download .p12 certificate"
+#          exit 1
+#        fi
+#
+#        # Step 3: Download the provisioning profile
+#        echo "⬇️ Downloading provisioning profile..."
+#        curl -f -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
+#        if [ $? -ne 0 ]; then
+#          echo "❌ Failed to download provisioning profile"
+#          exit 1
+#        fi
+#
+#        # Step 4: Clean previous keychains
+#        echo "🧹 Cleaning previous keychains..."
+#        security delete-keychain build.keychain 2>/dev/null
+#
+#        # Step 5: Create and configure the build keychain
+#        echo "🔑 Importing certificate into dedicated keychain..."
+#        security create-keychain -p "" build.keychain
+#        security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+#        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+#        security list-keychains -s build.keychain
+#        security default-keychain -s build.keychain
+#        security unlock-keychain -p "" build.keychain
+#
+#        echo "✅ Certificate imported."
+#
+#        # Step 6: Verify the certificate in the keychain
+#        echo "🔧 Verifying certificate in keychain..."
+#        security find-identity -p codesigning -v build.keychain
+#
+#        VALID_IDENTITY_COUNT=$(security find-identity -p codesigning build.keychain | grep -cE 'iPhone (Developer|Distribution):')
+#        if [ "$VALID_IDENTITY_COUNT" -lt 1 ]; then
+#          echo "❌ No valid iOS code signing identity found in build.keychain."
+#          exit 1
+#        fi
+#
+#        echo "✅ Certificate is trusted for code signing."
+#
+#        # Step 7: Install the provisioning profile
+#        # Extract UUID and Name from the provisioning profile using PlistBuddy
+#        echo "🔍 Extracting UUID and Name from the provisioning profile..."
+#        PROFILE_PATH="~/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+#        TEMP_PLIST="/tmp/profile.plist"
+#
+#        # Decode the mobile provisioning file to a plist format
+#        security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
+#
+#        # Use PlistBuddy to extract UUID and Name
+#        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
+#        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
+#
+#        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+#        echo "❌ Failed to extract UUID or Name from provisioning profile."
+#        exit 1
+#        fi
+#
+#        # Copy the provisioning profile to the correct location
+#        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+#        echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
+#
+#        # Step 8: Verify the provisioning profile with Xcode
+#        echo "🔎 Verifying provisioning profile in Xcode..."
+#        if ! security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision > /dev/null 2>&1; then
+#          echo "❌ Provisioning profile verification failed in Xcode."
+#          exit 1
+#        fi
+#        echo "✅ Provisioning profile verified in Xcode."
+#
+#        # Step 9: Create ExportOptions.plist for ad-hoc or app-store build
+#        echo "📝 Creating ExportOptions.plist..."
+#        cat > ExportOptions.plist <<EOF
+#        <?xml version="1.0" encoding="UTF-8"?>
+#        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+#        <plist version="1.0">
+#        <dict>
+#          <key>method</key>
+#          <string>${EXPORT_METHOD:-ad-hoc}</string>
+#          <key>signingStyle</key>
+#          <string>manual</string>
+#          <key>provisioningProfiles</key>
+#          <dict>
+#            <key>$BUNDLE_ID</key>
+#            <string>$PROFILE_NAME</string>
+#          </dict>
+#          <key>teamID</key>
+#          <string>$APPLE_TEAM_ID</string>
+#          <key>compileBitcode</key>
+#          <false/>
+#          <key>stripSwiftSymbols</key>
+#          <true/>
+#          <key>thinning</key>
+#          <string>&lt;none&gt;</string>
+#        </dict>
+#        </plist>
+#        EOF
+#
+#        echo "✅ ExportOptions.plist configured."
       #          echo "🔐 Setting up iOS signing (manual)..."
       #
       #          mkdir -p ios_certificates
@@ -1246,7 +1360,7 @@ workflows:
 #          wget -O signing/ios_certificate.p12 "$CERTIFICATE_URL"
 #          wget -O signing/ios_profile.mobileprovision "$PROFILE_URL"
 
-      - *build_ipa
+#      - *build_ipa
 
     artifacts:
       - *ios_app
