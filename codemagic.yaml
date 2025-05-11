@@ -639,8 +639,99 @@ definitions:
         rm -rf ios_certificates
         rm -f ExportOptions.plist
         echo "✅ Cleanup completed."
-
     - &build_apk
+      name: Building Apk with Feature Flags
+      script: |
+        echo "🔢 VERSION_NAME: $VERSION_NAME"
+        echo "🔢 VERSION_CODE: $VERSION_CODE"
+         # Default values
+        VERSION_NAME="${VERSION_NAME:-1.0.0}"
+        VERSION_CODE="${VERSION_CODE:-100}"
+
+        # Check if VERSION_NAME is empty or not set
+        if [ -z "$VERSION_NAME" ]; then
+          VERSION_NAME=$DEFAULT_VERSION_NAME
+          echo "🔢 Setting DEFAULT_VERSION_NAME"
+        fi
+
+        # Check if VERSION_CODE is empty or not set
+        if [ -z "$VERSION_CODE" ]; then
+          VERSION_CODE=$DEFAULT_VERSION_CODE
+          echo "🔢 Setting DEFAULT_VERSION_CODE"
+        fi
+
+        echo "🔢 VERSION_NAME: $VERSION_NAME"
+        echo "🔢 VERSION_CODE: $VERSION_CODE"
+
+        echo "🔧 Ensuring valid version in pubspec.yaml: $VERSION_NAME+$VERSION_CODE"
+        if grep -q "^version: " pubspec.yaml; then
+          sed -i.bak -E "s/^version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
+          else
+        echo "version: $VERSION_NAME+$VERSION_CODE" >> pubspec.yaml
+          fi
+
+        flutter pub get
+        if [ $? -ne 0 ]; then
+        echo "❌ Failed to get Flutter dependencies"
+        exit 1
+        fi
+
+        echo "✅ Building APK..."
+        flutter build apk \
+            --release \
+            --dart-define=WEB_URL="$WEB_URL" \
+            --dart-define=PUSH_NOTIFY="$PUSH_NOTIFY" \
+            --dart-define=PKG_NAME="$PKG_NAME" \
+            --dart-define=APP_NAME="$APP_NAME" \
+            --dart-define=ORG_NAME="$ORG_NAME" \
+            --dart-define=VERSION_NAME="$VERSION_NAME" \
+            --dart-define=VERSION_CODE="$VERSION_CODE" \
+            --dart-define=EMAIL_ID="$EMAIL_ID" \
+            --dart-define=IS_SPLASH="$IS_SPLASH" \
+            --dart-define=SPLASH="$SPLASH" \
+            --dart-define=SPLASH_BG="$SPLASH_BG" \
+            --dart-define=SPLASH_ANIMATION="$SPLASH_ANIMATION" \
+            --dart-define=SPLASH_BG_COLOR="$SPLASH_BG_COLOR" \
+            --dart-define=SPLASH_TAGLINE="$SPLASH_TAGLINE" \
+            --dart-define=SPLASH_TAGLINE_COLOR="$SPLASH_TAGLINE_COLOR" \
+            --dart-define=SPLASH_DURATION="$SPLASH_DURATION" \
+            --dart-define=IS_PULLDOWN="$IS_PULLDOWN" \
+            --dart-define=LOGO_URL="$LOGO_URL" \
+            --dart-define=IS_BOTTOMMENU="$IS_BOTTOMMENU" \
+            --dart-define=BOTTOMMENU_ITEMS="$BOTTOMMENU_ITEMS" \
+            --dart-define=BOTTOMMENU_BG_COLOR="$BOTTOMMENU_BG_COLOR" \
+            --dart-define=BOTTOMMENU_ICON_COLOR="$BOTTOMMENU_ICON_COLOR" \
+            --dart-define=BOTTOMMENU_TEXT_COLOR="$BOTTOMMENU_TEXT_COLOR" \
+            --dart-define=BOTTOMMENU_ACTIVE_TAB_COLOR="$BOTTOMMENU_ACTIVE_TAB_COLOR" \
+            --dart-define=BOTTOMMENU_ICON_POSITION="$BOTTOMMENU_ICON_POSITION" \
+            --dart-define=BOTTOMMENU_VISIBLE_ON="$BOTTOMMENU_VISIBLE_ON" \
+            --dart-define=IS_DEEPLINK="$IS_DEEPLINK" \
+            --dart-define=IS_LOAD_IND="$IS_LOAD_IND" \
+            --dart-define=IS_CAMERA="$IS_CAMERA" \
+            --dart-define=IS_LOCATION="$IS_LOCATION" \
+            --dart-define=IS_BIOMETRIC="$IS_BIOMETRIC" \
+            --dart-define=IS_MIC="$IS_MIC" \
+            --dart-define=IS_CONTACT="$IS_CONTACT" \
+            --dart-define=IS_CALENDAR="$IS_CALENDAR" \
+            --dart-define=IS_NOTIFICATION="$IS_NOTIFICATION" \
+            --dart-define=IS_STORAGE="$IS_STORAGE" \
+            --dart-define=firebase_config_android="$firebase_config_android" \
+            --dart-define=firebase_config_ios="$firebase_config_ios" \
+            --dart-define=APNS_KEY_ID="$APNS_KEY_ID" \
+            --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID" \
+            --dart-define=APNS_AUTH_KEY_URL="$APNS_AUTH_KEY_URL" \
+            --dart-define=KEY_STORE="$KEY_STORE" \
+            --dart-define=CM_KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD" \
+            --dart-define=CM_KEY_ALIAS="$CM_KEY_ALIAS" \
+            --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD" > flutter_build_apk.log
+        if [ $? -ne 0 ]; then
+        echo "❌ APK build failed"
+        cat flutter_build.log
+        exit 1
+        fi
+        echo "✅ APK build completed."
+
+    - &build_apk_release
       name: Building Apk with Feature Flags
       script: |
         echo "🔢 VERSION_NAME: $VERSION_NAME"
@@ -1398,8 +1489,8 @@ definitions:
 
 
 workflows:
-  android-workflow:
-    name: Android Workflow
+  apk-workflow:
+    name: Android Workflow Free & Paid APK
     max_build_duration: 30
     instance_type: mac_mini_m1
     environment:
@@ -1408,26 +1499,48 @@ workflows:
       - *change_proj_name
       - *debug_env
       - *update_package_names
-#      - *set_default_version
       - *change_app_name
       - *Update_App_Version
       - *Update_SDK_Version
       - *get_json
       - *Inject_Firebase
-#      - *Configure_Firebase_for_iOS
+      - *get_logo
+      - *set_launcher_icons
+      - *get_splash
+#      - *key_store
+      - *build_apk
+    artifacts:
+      - *android_apk
+#      - *android_abb
+      - flutter_build_apk.log
+#      - flutter_build_aab.log
+    publishing: *email_release
+
+  android-workflow:
+    name: Android Workflow Release APK
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+    scripts:
+      - *change_proj_name
+      - *debug_env
+      - *update_package_names
+      - *change_app_name
+      - *Update_App_Version
+      - *Update_SDK_Version
+      - *get_json
+      - *Inject_Firebase
       - *get_logo
       - *set_launcher_icons
       - *get_splash
       - *key_store
-      - *build_apk
-#      - *build_ipa
+      - *build_apk_release
     artifacts:
       - *android_apk
       - *android_abb
       - flutter_build_apk.log
       - flutter_build_aab.log
-      - fcm_token.txt
-    #        - *android_abb
     publishing: *email_release
 
   ios-workflow:
