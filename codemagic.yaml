@@ -863,7 +863,7 @@ definitions:
     - &setup_ios_signing_manual
       name: Setting Up iOS Signing (Manual)
       script: |
-        cho "🔐 Setting up iOS signing (manual)..."
+        echo "🔐 Setting up iOS signing (manual)..."
 
         mkdir -p ios_certificates
 
