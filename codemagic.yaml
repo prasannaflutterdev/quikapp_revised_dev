@@ -904,7 +904,18 @@ definitions:
       
         echo "✅ Profile UUID: $PROFILE_UUID"
         echo "✅ Profile Name: $PROFILE_NAME"
-        echo "🔍 Verifying imported code signing identities..."
+        
+        echo "🔍 Validating provisioning profile matches app bundle ID..."
+  
+        PROFILE_APP_ID_PREFIX=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" ios_certificates/profile.plist)
+        EXPECTED_APP_ID="$APPLE_TEAM_ID.$PKG_NAME"
+        
+        if [[ "$PROFILE_APP_ID_PREFIX" != "$EXPECTED_APP_ID" ]]; then
+        echo "❌ Provisioning profile's App ID ($PROFILE_APP_ID_PREFIX) does not match expected ($EXPECTED_APP_ID)"
+        exit 1
+        else
+        echo "✅ Provisioning profile matches expected bundle ID: $PKG_NAME"
+        fi
         
         echo "🔍 Verifying imported code signing identities..."
         security find-identity -v -p codesigning build.keychain
