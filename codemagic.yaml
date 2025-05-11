@@ -904,6 +904,18 @@ definitions:
       
         echo "✅ Profile UUID: $PROFILE_UUID"
         echo "✅ Profile Name: $PROFILE_NAME"
+        echo "🔍 Verifying imported code signing identities..."
+        
+        security find-identity -v -p codesigning build.keychain
+          
+        VALID_IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "Apple Distribution" | awk '{print $2}')
+          
+        if [ -z "$VALID_IDENTITY" ]; then
+          echo "❌ No valid Apple Distribution certificate found in the keychain."
+          exit 1
+        else
+          echo "✅ Found valid Apple Distribution certificate: $VALID_IDENTITY"
+        fi
           
           echo "📝 Creating ExportOptions.plist..."
           cat > ExportOptions.plist <<EOF
