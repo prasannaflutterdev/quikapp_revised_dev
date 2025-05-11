@@ -902,16 +902,17 @@ definitions:
           exit 1
         fi
 
-        echo "📋 Reading profile UUID and Name..."
-        PROFILE_CONTENT=$(security cms -D -i ios_certificates/profile.mobileprovision 2>/dev/null)
-        PROFILE_UUID=$(echo "$PROFILE_CONTENT" | grep -oE '<key>UUID</key>\s*<string>[^<]*</string>' | sed -E 's/.*<string>([^<]+)<\/string>.*/\1/')
-        PROFILE_NAME=$(echo "$PROFILE_CONTENT" | grep -oE '<key>Name</key>\s*<string>[^<]*</string>' | sed -E 's/.*<string>([^<]+)<\/string>.*/\1/')
-
+        echo "📋 Extracting UUID and Name from provisioning profile..."
+        security cms -D -i ios_certificates/profile.mobileprovision -o ios_certificates/profile.plist
+        
+        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" ios_certificates/profile.plist)
+        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" ios_certificates/profile.plist)
+        
         if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
-          echo "❌ Failed to read UUID or Name from the provisioning profile."
-          exit 1
+        echo "❌ Failed to extract UUID or Name from provisioning profile."
+        exit 1
         fi
-
+      
         echo "✅ Profile UUID: $PROFILE_UUID"
         echo "✅ Profile Name: $PROFILE_NAME"
 
