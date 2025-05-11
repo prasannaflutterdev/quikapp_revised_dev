@@ -1322,9 +1322,8 @@ workflows:
 #      - *build_ipa
 
     artifacts:
-      - *ios_app
+      - build/ios/ipa/*.ipa
       - flutter_build_ios.log
-      - fcm_token.txt
 
 #    code_signing:
 #        ios_signing:
