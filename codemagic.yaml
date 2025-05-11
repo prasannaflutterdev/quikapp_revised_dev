@@ -639,7 +639,8 @@ definitions:
           fi
       
           echo "✅ IPA build completed successfully"
-           echo "🧹 Cleaning up certificates and profiles for security..."
+          echo "🧹 Cleaning up certificates and profiles for security..."
+          security delete-keychain build.keychain
           rm -rf ios_certificates
           rm -f ExportOptions.plist
           echo "✅ Cleanup completed."
@@ -891,8 +892,13 @@ definitions:
         fi
         echo "✅ Provisioning profile downloaded successfully."
 
-        echo "🔐 Importing certificate into keychain..."
+        echo "🔐 Creating and unlocking custom keychain..."
         security create-keychain -p "" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "" build.keychain
+        security set-keychain-settings -lut 21600 build.keychain
+        
+        echo "🔐 Importing certificate into custom keychain..."
         security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
         if [ $? -eq 0 ]; then
