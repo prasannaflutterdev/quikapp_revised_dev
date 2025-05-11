@@ -1452,10 +1452,17 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
+      # 🧼 Clean and set minimum iOS deployment target
       - name: Prepare iOS platform and update Podfile
         script: |
             flutter clean
             sed -i '' 's/platform :ios, .*/platform :ios, '\''13.0'\''/' ios/Podfile
+            flutter build ios --release --no-codesign
+
+        # 🧼 Set iOS deployment target in .xcconfig (if needed)
+      - name: Set iOS Deployment Target in .xcconfig
+        script: |
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/' ios/Flutter/Flutter.xcconfig
             flutter build ios --release --no-codesign
             
             # 📦 Install CocoaPods
