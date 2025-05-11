@@ -1452,7 +1452,7 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      # 🧼 Clean and set minimum iOS deployment target
+        # 🧼 Clean and set minimum iOS deployment target
       - name: Prepare iOS platform and update Podfile
         script: |
             flutter clean
@@ -1464,14 +1464,41 @@ workflows:
         script: |
             sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/' ios/Flutter/Flutter.xcconfig
             flutter build ios --release --no-codesign
-            
-            # 📦 Install CocoaPods
+
+        # 📦 Install CocoaPods
       - name: Install CocoaPods
         script: |
             cd ios
-            pod install
+            pod install --repo-update
             cd ..
-      - *setup_ios_signing_manual
+
+        # 🧑‍💻 Setup automatic signing using App Store Connect API
+      - name: Fetch signing files from App Store Connect
+        script: |
+            app-store-connect fetch-signing-files \
+              "com.yourcompany.yourapp" \
+              --type IOS_APP_STORE \
+              --create
+
+        # Initialize keychain and add certificates
+      - name: Initialize keychain and add certificates
+        script: |
+            keychain initialize
+            keychain add-certificates
+
+        # 🏗️ Build the iOS app without signing
+      - name: Build iOS app
+        script: |
+            flutter build ios --release --no-codesign
+
+        # 🧑‍💻 Optional: Build IPA and upload
+      - name: Build IPA with xcodebuild
+        script: |
+            xcode-project build-ipa \
+              --workspace ios/Runner.xcworkspace \
+              --scheme Runner \
+              --archive-flags="-allowProvisioningUpdates"
+#      - *setup_ios_signing_manual
 #      - *build_ipa
 
     artifacts:
