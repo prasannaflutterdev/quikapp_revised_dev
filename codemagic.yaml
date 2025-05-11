@@ -863,7 +863,7 @@ definitions:
     - &setup_ios_signing_manual
       name: Setting Up iOS Signing (Manual)
       script: |
-        echo "🔐 Setting up iOS signing (manual)..."
+        cho "🔐 Setting up iOS signing (manual)..."
 
         mkdir -p ios_certificates
 
@@ -894,21 +894,27 @@ definitions:
         echo "🔐 Importing certificate into keychain..."
         security create-keychain -p "" build.keychain
         security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
         if [ $? -eq 0 ]; then
-          echo "✅ Certificate imported into keychain."
+          echo "✅ Certificate imported and trusted for code signing."
         else
           echo "❌ Failed to import certificate."
           exit 1
         fi
 
-        security list-keychains -s build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
+        echo "📋 Reading profile UUID and Name..."
+        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" ios_certificates/profile.mobileprovision 2>/dev/null || echo "")
+        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" ios_certificates/profile.mobileprovision 2>/dev/null || echo "")
 
-        echo "✅ Keychain setup complete."
-        
+        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+          echo "❌ Failed to read UUID or Name from the provisioning profile."
+          exit 1
+        fi
+
+        echo "✅ Profile UUID: $PROFILE_UUID"
+        echo "✅ Profile Name: $PROFILE_NAME"
+
         echo "📝 Creating ExportOptions.plist..."
-        
         cat > ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -921,7 +927,7 @@ definitions:
         <key>provisioningProfiles</key>
         <dict>
         <key>$PKG_NAME</key>
-        <string>profile</string>
+        <string>$PROFILE_NAME</string>
         </dict>
         <key>teamID</key>
         <string>$APPLE_TEAM_ID</string>
