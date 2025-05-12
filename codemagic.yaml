@@ -488,53 +488,53 @@ definitions:
           echo "🚫 SDK version update skipped (PUSH_NOTIFY is not true)"
         fi
 
-    - &Update_App_Version
-      name: Inject Version Info into pubspec, build.gradle (Android) & Xcode project (iOS)
-      script: |
-        # Default values
-        VERSION_NAME="${VERSION_NAME:-1.0.0}"
-        VERSION_CODE="${VERSION_CODE:-100}"
-        # Check if VERSION_NAME is empty or not set
-         if [ -z "$VERSION_NAME" ]; then
-           VERSION_NAME=$DEFAULT_VERSION_NAME
-           echo "🔢 Setting DEFAULT_VERSION_NAME"
-         fi
-        
-         # Check if VERSION_CODE is empty or not set
-         if [ -z "$VERSION_CODE" ]; then
-           VERSION_CODE=$DEFAULT_VERSION_CODE
-           echo "🔢 Setting DEFAULT_VERSION_CODE"
-         fi
-        
-         echo "🔢 VERSION_NAME: $VERSION_NAME"
-         echo "🔢 VERSION_CODE: $VERSION_CODE"
-        echo "🔄 Updating version to ${VERSION_NAME}+${VERSION_CODE}"
-        
-        # ───── pubspec.yaml ─────
-        sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
-        echo "✅ Updated pubspec.yaml"
-        
-        # ───── Android build.gradle ─────
-        echo "🔧 Updating Android build.gradle..."
-        sed -i'' -e "s/versionCode.*/versionCode ${VERSION_CODE}/" android/app/build.gradle
-        sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
-        echo "✅ Android version updated: $VERSION_NAME ($VERSION_CODE)"
-        
-        # ───── iOS: project.pbxproj ─────
-        echo "🍏 Updating iOS version info in project.pbxproj..."
-        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
-        
-        if [ -f "$IOS_PROJECT_FILE" ]; then
-          sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
-          sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
-          echo "✅ iOS version updated: $VERSION_NAME ($VERSION_CODE)"
-        else
-          echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
-          exit 1
-        fi
-
-
-
+#    - &Update_App_Version
+#      name: Inject Version Info into pubspec, build.gradle (Android) & Xcode project (iOS)
+#      script: |
+#        # Default values
+#        VERSION_NAME="${VERSION_NAME:-1.0.0}"
+#        VERSION_CODE="${VERSION_CODE:-100}"
+#        # Check if VERSION_NAME is empty or not set
+#         if [ -z "$VERSION_NAME" ]; then
+#           VERSION_NAME=$DEFAULT_VERSION_NAME
+#           echo "🔢 Setting DEFAULT_VERSION_NAME"
+#         fi
+#
+#         # Check if VERSION_CODE is empty or not set
+#         if [ -z "$VERSION_CODE" ]; then
+#           VERSION_CODE=$DEFAULT_VERSION_CODE
+#           echo "🔢 Setting DEFAULT_VERSION_CODE"
+#         fi
+#
+#         echo "🔢 VERSION_NAME: $VERSION_NAME"
+#         echo "🔢 VERSION_CODE: $VERSION_CODE"
+#        echo "🔄 Updating version to ${VERSION_NAME}+${VERSION_CODE}"
+#
+#        # ───── pubspec.yaml ─────
+#        sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+#        echo "✅ Updated pubspec.yaml"
+#
+#        # ───── Android build.gradle ─────
+#        echo "🔧 Updating Android build.gradle..."
+#        sed -i'' -e "s/versionCode.*/versionCode ${VERSION_CODE}/" android/app/build.gradle
+#        sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
+#        echo "✅ Android version updated: $VERSION_NAME ($VERSION_CODE)"
+#
+#        # ───── iOS: project.pbxproj ─────
+#        echo "🍏 Updating iOS version info in project.pbxproj..."
+#        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+#
+#        if [ -f "$IOS_PROJECT_FILE" ]; then
+#          sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
+#          sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
+#          echo "✅ iOS version updated: $VERSION_NAME ($VERSION_CODE)"
+#        else
+#          echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
+#          exit 1
+#        fi
+#
+#
+#
 
     - &update_package_names
       name: Update Android & iOS Package Name / Bundle ID
@@ -1474,20 +1474,43 @@ definitions:
           echo "⚠️ Missing APNs credentials, skipping .p8 key setup"
         fi
 
-#      name: Setup Android keystore and insert Gradle signing block
-#      script: |
-#        echo "✅ Downloading keystore..."
-#        curl -o android/app/keystore.jks "$KEY_STORE"
-#
-#        echo "✅ Writing key.properties..."
-#        cat > android/key.properties <<EOF
-#        storeFile=keystore.jks
-#        storePassword=$CM_KEYSTORE_PASSWORD
-#        keyAlias=$CM_KEY_ALIAS
-#        keyPassword=$CM_KEY_PASSWORD
-#        EOF
 
-
+    - &Update_App_Version
+      name: Update Version Info (Android & iOS)
+      script: |
+        # Generate dynamic version code using timestamp (or set default)
+        VERSION_NAME="${VERSION_NAME:-1.0.0}"
+        VERSION_CODE="${VERSION_CODE:-$(date +%Y%m%d%H%M)}" # Dynamic version code
+        
+        echo "🔢 VERSION_NAME: $VERSION_NAME"
+        echo "🔢 VERSION_CODE: $VERSION_CODE"
+        
+        # ───── Update version in pubspec.yaml ─────
+        echo "🔧 Updating pubspec.yaml..."
+        if grep -q "^version: " pubspec.yaml; then
+          sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+        else
+          echo "version: ${VERSION_NAME}+${VERSION_CODE}" >> pubspec.yaml
+        fi
+        echo "✅ pubspec.yaml version updated."
+        
+        # ───── Update version in Android build.gradle ─────
+        echo "🔧 Updating Android version in build.gradle..."
+        sed -i'' -e "s/versionCode [0-9]\+/versionCode ${VERSION_CODE}/" android/app/build.gradle
+        sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
+        echo "✅ Android version updated in build.gradle."
+        
+        # ───── Update version in iOS project.pbxproj ─────
+        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+        if [ -f "$IOS_PROJECT_FILE" ]; then
+          echo "🔧 Updating iOS version in project.pbxproj..."
+          sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
+          sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
+          echo "✅ iOS version updated in project.pbxproj."
+        else
+          echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
+          exit 1
+        fi
 workflows:
   apk-workflow:
     name: Android Workflow Free & Paid APK
@@ -1500,7 +1523,6 @@ workflows:
       - *debug_env
       - *update_package_names
       - *change_app_name
-      - *Update_App_Version
       - *Update_SDK_Version
       - *get_json
       - *Inject_Firebase
@@ -1508,6 +1530,7 @@ workflows:
       - *set_launcher_icons
       - *get_splash
 #      - *key_store
+      - *Update_App_Version
       - *build_apk
     artifacts:
       - *android_apk
@@ -1527,13 +1550,13 @@ workflows:
       - *debug_env
       - *update_package_names
       - *change_app_name
-      - *Update_App_Version
       - *Update_SDK_Version
       - *get_json
       - *Inject_Firebase
       - *get_logo
       - *set_launcher_icons
       - *get_splash
+      - *Update_App_Version
       - *key_store
       - *build_apk_release
     artifacts:
