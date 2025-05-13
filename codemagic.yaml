@@ -951,7 +951,10 @@ definitions:
       name: Setting Up iOS Signing (Manual)
       script: |
         echo "🔐 Setting up iOS code signing..."
-  
+
+          export LC_ALL=en_US.UTF-8
+          export LANG=en_US.UTF-8
+      
           KEYCHAIN_PASSWORD="temp_key_pass"
           KEYCHAIN_NAME="ios-signing.keychain"
           
@@ -974,21 +977,20 @@ definitions:
           curl -o profile.mobileprovision "$PROFILE_URL"
           
           UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-        echo "✅ Profile UUID: $UUID"
+          echo "✅ Profile UUID: $UUID"
           
           PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp profile.mobileprovision "$PROFILE_PATH"
           
-          # Trust the keychain so Xcode can access it
           echo "✅ Trusting keychain for code signing..."
           security list-keychains -s "$KEYCHAIN_NAME"
           security list-keychains
           security find-identity -v -p codesigning
-          
-          # Build Flutter project (no codesign)
-          echo "⚙️ Flutter build..."
-          flutter build ios --release --no-codesign \
+      
+          # Flutter build
+          echo "⚙️ Building Flutter iOS project..."
+          flutter build ios --release \
           --dart-define=WEB_URL="$WEB_URL" \
           --dart-define=PUSH_NOTIFY="$PUSH_NOTIFY" \
           --dart-define=PKG_NAME="$PKG_NAME" \
@@ -1033,23 +1035,10 @@ definitions:
           --dart-define=CM_KEY_ALIAS="$CM_KEY_ALIAS" \
           --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD"
           
-          # Archive app
-          echo "📦 Archiving app with xcodebuild..."
-          xcodebuild -workspace ios/Runner.xcworkspace \
-          -scheme Runner \
-          -configuration Release \
-          -archivePath build/ios/archive/Runner.xcarchive \
-          archive \
-          CODE_SIGN_STYLE=Manual \
-          PROVISIONING_PROFILE_SPECIFIER="Garbcode" \
-          DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-          PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"
-          
           # ExportOptions.plist
           cat <<EOF > ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-          "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
           <key>method</key>
@@ -1061,21 +1050,19 @@ definitions:
           </dict>
           <key>signingStyle</key>
           <string>manual</string>
-          <key>stripSwiftSymbols</key>
-          <true/>
           <key>teamID</key>
           <string>$APPLE_TEAM_ID</string>
           </dict>
           </plist>
           EOF
-          
-          # Export IPA
+      
+          # Export the IPA
           echo "📦 Exporting IPA..."
           xcodebuild -exportArchive \
           -archivePath build/ios/archive/Runner.xcarchive \
           -exportPath build/ios/ipa \
           -exportOptionsPlist ExportOptions.plist
-        
+      
           echo "✅ IPA export complete: build/ios/ipa"
 
 #  --------------------------------------------
@@ -1589,31 +1576,36 @@ workflows:
       - *get_splash
       - *Update_SDK_Version
         # 🧼 Clean and set minimum iOS deployment target
-      - name: update Podfile
+      - name: Update Podfile and Reinstall CocoaPods
         script: |
+          echo "🛠️ Setting UTF-8 encoding for CocoaPods..."
           export LANG=en_US.UTF-8
-          echo $SHELL
-          echo 'export LANG=en_US.UTF-8' >> ~/.bash_profile
-          source ~/.bash_profile
-          echo $LANG
-          
-            flutter clean
-            # Step 1: Clean up
-            rm -rf ios/Pods
-            rm -rf ios/Podfile.lock
-            rm -rf ~/Library/Caches/CocoaPods
-            rm -rf ~/.cocoapods/repos
-            
-            # Step 2: Reinstall pods and update repo
-            cd ios
-            pod install --repo-update
-            cd ..
-          
-            pod --version
-            sudo gem install cocoapods
-            flutter clean
-            flutter pub get
+          export LC_ALL=en_US.UTF-8
 
+          echo "💻 Shell in use: $SHELL"
+          echo "🌍 Current language: $LANG"
+
+          # Clean up old Pod configurations
+          echo "🧹 Cleaning up CocoaPods and Flutter cache..."
+          flutter clean
+          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
+
+          # Update CocoaPods
+          echo "🚀 Installing/Updating CocoaPods..."
+          sudo gem install cocoapods
+
+          # Reinstall pods and update the repo
+          echo "🔄 Reinstalling CocoaPods dependencies..."
+          cd ios
+          pod install --repo-update
+          cd ..
+
+          # Final cleanup and dependency fetch
+          echo "🔧 Final cleanup and fetching dependencies..."
+          flutter clean
+          flutter pub get
+
+          echo "✅ Pod update complete. CocoaPods version: $(pod --version)"
        
       
 #
@@ -1644,7 +1636,7 @@ workflows:
 #              --scheme Runner \
 #              --archive-flags="-allowProvisioningUpdates"
       - *setup_ios_signing_manual
-      - *build_ipa
+#      - *build_ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
