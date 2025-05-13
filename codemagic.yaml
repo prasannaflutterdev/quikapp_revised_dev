@@ -481,7 +481,7 @@ definitions:
           # Optional: iOS project.pbxproj iOS Deployment Target
           IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
           if [ -f "$IOS_PROJECT_FILE" ]; then
-            sed -i'' -e "s/IPHONEOS_DEPLOYMENT_TARGET = .*;/IPHONEOS_DEPLOYMENT_TARGET = 12.0;/" "$IOS_PROJECT_FILE"
+            sed -i'' -e "s/IPHONEOS_DEPLOYMENT_TARGET = .*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/" "$IOS_PROJECT_FILE"
             echo "✅ Xcode project iOS deployment target updated to 12.0"
           fi
         else
@@ -1589,53 +1589,62 @@ workflows:
       - *get_splash
       - *Update_SDK_Version
         # 🧼 Clean and set minimum iOS deployment target
-      - name: Prepare iOS platform and update Podfile
+      - name: update Podfile
         script: |
+          export LANG=en_US.UTF-8
+          echo $SHELL
+          echo 'export LANG=en_US.UTF-8' >> ~/.bash_profile
+          source ~/.bash_profile
+          echo $LANG
+          
             flutter clean
-            sed -i '' 's/platform :ios, .*/platform :ios, '\''13.0'\''/' ios/Podfile
-            flutter build ios --release --no-codesign
-
-        # 🧼 Set iOS deployment target in .xcconfig (if needed)
-      - name: Set iOS Deployment Target in .xcconfig
-        script: |
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/' ios/Flutter/Flutter.xcconfig
-            flutter build ios --release --no-codesign
-
-        # 📦 Install CocoaPods
-      - name: Install CocoaPods
-        script: |
+            # Step 1: Clean up
+            rm -rf ios/Pods
+            rm -rf ios/Podfile.lock
+            rm -rf ~/Library/Caches/CocoaPods
+            rm -rf ~/.cocoapods/repos
+            
+            # Step 2: Reinstall pods and update repo
             cd ios
             pod install --repo-update
             cd ..
+          
+            pod --version
+            sudo gem install cocoapods
+            flutter clean
+            flutter pub get
 
-        # 🧑‍💻 Setup automatic signing using App Store Connect API
-      - name: Fetch signing files from App Store Connect
-        script: |
-            app-store-connect fetch-signing-files \
-              "com.yourcompany.yourapp" \
-              --type IOS_APP_STORE \
-              --create
-
-        # Initialize keychain and add certificates
-      - name: Initialize keychain and add certificates
-        script: |
-            keychain initialize
-            keychain add-certificates
-
-        # 🏗️ Build the iOS app without signing
-      - name: Build iOS app
-        script: |
-            flutter build ios --release --no-codesign
-
-        # 🧑‍💻 Optional: Build IPA and upload
-      - name: Build IPA with xcodebuild
-        script: |
-            xcode-project build-ipa \
-              --workspace ios/Runner.xcworkspace \
-              --scheme Runner \
-              --archive-flags="-allowProvisioningUpdates"
-#      - *setup_ios_signing_manual
-#      - *build_ipa
+       
+      
+#
+#        # 🧑‍💻 Setup automatic signing using App Store Connect API
+#      - name: Fetch signing files from App Store Connect
+#        script: |
+#            app-store-connect fetch-signing-files \
+#              "com.yourcompany.yourapp" \
+#              --type IOS_APP_STORE \
+#              --create
+#
+#        # Initialize keychain and add certificates
+#      - name: Initialize keychain and add certificates
+#        script: |
+#            keychain initialize
+#            keychain add-certificates
+#
+#        # 🏗️ Build the iOS app without signing
+#      - name: Build iOS app
+#        script: |
+#            flutter build ios --release --no-codesign
+#
+#        # 🧑‍💻 Optional: Build IPA and upload
+#      - name: Build IPA with xcodebuild
+#        script: |
+#            xcode-project build-ipa \
+#              --workspace ios/Runner.xcworkspace \
+#              --scheme Runner \
+#              --archive-flags="-allowProvisioningUpdates"
+      - *setup_ios_signing_manual
+      - *build_ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
