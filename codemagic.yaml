@@ -575,7 +575,7 @@ definitions:
     - &build_ipa
       name: Building iOS App with Feature Flags
       script: |
-        if [ ! -f certificate.p12 ] || [ ! -f profile.mobileprovision ]; then
+        if [ ! -f signing_cert.p12 ] || [ ! -f profile.mobileprovision ]; then
         echo "❌ Error: Certificates or provisioning profile missing."
         exit 1
         fi
