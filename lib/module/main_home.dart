@@ -108,6 +108,16 @@ class _MainHomeState extends State<MainHome> {
 
     if (pushNotify == true) {
       setupFirebaseMessaging();
+      // ✅ Modified: Handle terminated state
+      FirebaseMessaging.instance.getInitialMessage().then((message) async {
+        if (message != null) {
+          final internalUrl = message.data['url'];
+          if (internalUrl != null && internalUrl.isNotEmpty) {
+            _pendingInitialUrl = internalUrl; // 🔹 Save for later navigation
+          }
+          await _showLocalNotification(message);
+        }
+      });
     }
 
     isBottomMenu = widget.isBottomMenu;
@@ -155,16 +165,7 @@ class _MainHomeState extends State<MainHome> {
       pullToRefreshController = null;
     }
 
-    // ✅ Modified: Handle terminated state
-    FirebaseMessaging.instance.getInitialMessage().then((message) async {
-      if (message != null) {
-        final internalUrl = message.data['url'];
-        if (internalUrl != null && internalUrl.isNotEmpty) {
-          _pendingInitialUrl = internalUrl; // 🔹 Save for later navigation
-        }
-        await _showLocalNotification(message);
-      }
-    });
+
     Uri parsedUri = Uri.parse(widget.webUrl);
     myDomain = parsedUri.host;
     if (myDomain.startsWith('www.')) {
