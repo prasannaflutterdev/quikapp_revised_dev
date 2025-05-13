@@ -2,67 +2,76 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Quikapp Flutter Latest</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>quickappproj</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-		<key>NSCameraUsageDescription</key>
-        <string>This app requires camera access.</string>
+    <!-- App Metadata -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Quikapp Flutter Latest</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>quickappproj</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
 
-        <key>NSLocationWhenInUseUsageDescription</key>
-        <string>This app requires location access.</string>
+    <!-- Supported Orientations -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
 
-        <key>NSMicrophoneUsageDescription</key>
-        <string>This app needs access to the microphone.</string>
+    <!-- Permissions -->
+    <key>NSCameraUsageDescription</key>
+    <string>This app requires camera access to take photos and videos.</string>
 
-        <key>NSContactsUsageDescription</key>
-        <string>This app needs access to your contacts.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs your location to provide location-based services.</string>
 
-        <key>NSCalendarsUsageDescription</key>
-        <string>This app uses your calendar to sync events.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs microphone access for voice recording and audio features.</string>
 
-        <key>NSFaceIDUsageDescription</key>
-        <string>This app uses Face ID for secure access.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>This app requires access to your contacts for communication features.</string>
 
-        <key>NSUserNotificationUsageDescription</key>
-        <string>This app sends you important notifications.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>This app uses your calendar to sync and manage events.</string>
 
-        <key>NSPhotoLibraryUsageDescription</key>
-        <string>This app saves media to your photo library.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>This app uses Face ID for secure login and authentication.</string>
+
+    <!-- Notifications -->
+    <key>UNUserNotificationCenter</key>
+    <string>This app sends you important notifications and updates.</string>
+
+    <!-- Media Access -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app requires access to your photo library to save images and videos.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app needs permission to save media to your photo library.</string>
 </dict>
 </plist>

@@ -379,6 +379,28 @@ class _MainHomeState extends State<MainHome> {
 
   bool isLoading = true;
   bool hasError = false;
+
+  Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+    final icon = Icon(
+      _getIconByName(item['icon']),
+      color: isActive ? Colors.blue : Colors.grey,
+    );
+    final label = Text(item['label']);
+
+    switch (widget.iconPosition) {
+      case 'above':
+        return Column(children: [icon, label]);
+      case 'beside':
+        return Row(children: [icon, label]);
+      case 'only_icon':
+        return icon;
+      case 'only_text':
+        return label;
+      default:
+        return Column(children: [icon, label]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -551,6 +573,14 @@ class _MainHomeState extends State<MainHome> {
                     ),
                   ),
                 );
+                // return GestureDetector(
+                //   onTap: () {
+                //     setState(() {
+                //       _currentIndex = index;
+                //     });
+                //   },
+                //   child: _buildMenuItem(item, isActive),
+                // );
               }),
             ),
           )
