@@ -582,7 +582,7 @@ definitions:
         
         echo "🔑 Setting up provisioning profile for build..."
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
         
         echo "✅ Building iOS IPA..."
         flutter build ipa \
