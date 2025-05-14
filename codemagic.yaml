@@ -950,129 +950,126 @@ definitions:
     - &Setup_IOS
       name: Setting Up IOS Build
       script: |
-        echo "🔐 Setting up iOS code signing..."
-        export LC_ALL=en_US.UTF-8
-        export LANG=en_US.UTF-8
-
-        KEYCHAIN_PASSWORD="temp_key_pass"
-        KEYCHAIN_NAME="ios-signing.keychain"
-
+          echo "🔐 Setting up iOS code signing..."
+  
+          export LC_ALL=en_US.UTF-8
+          export LANG=en_US.UTF-8
+          
+          KEYCHAIN_PASSWORD="temp_key_pass"
+          KEYCHAIN_NAME="ios-signing.keychain"
+          
         # Download and import certificate
-        echo "📥 Downloading certificate..."
-        curl -o signing_cert.p12 "$CERT_URL"
-
-        echo "🔐 Creating temporary keychain..."
-        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-        security default-keychain -s "$KEYCHAIN_NAME"
-        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-        security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
-
+          echo "📥 Downloading certificate..."
+          curl -o signing_cert.p12 "$CERT_URL"
+          
+          echo "🔐 Creating temporary keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
+          
         # Import the certificate to the keychain
-        echo "🔑 Importing certificate..."
-        security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-
-        echo "🔍 Verifying imported certificate..."
-        security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-
-        # Download provisioning profile
-        echo "📥 Downloading provisioning profile..."
-        curl -o profile.mobileprovision "$PROFILE_URL"
-
-        # Get the UUID of the provisioning profile
-        UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-        echo "✅ Profile UUID: $UUID"
-
-        PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        cp profile.mobileprovision "$PROFILE_PATH"
-
-        # Trust the keychain
-        echo "✅ Trusting keychain for code signing..."
-        security list-keychains -s "$KEYCHAIN_NAME"
-        security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-
+          echo "🔑 Importing certificate..."
+          security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          
+        # Trust the keychain for signing tools
+          echo "✅ Trusting keychain for code signing..."
+          security list-keychains -s "$KEYCHAIN_NAME"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+        
         # Extract CODE_SIGN_IDENTITY
-        CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | awk '{print $2}' | head -n 1)
-        echo "CODE_SIGN_IDENTITY=$CODE_SIGN_IDENTITY"
-        if [ -z "$CODE_SIGN_IDENTITY" ]; then
-        echo "❌ Failed to extract CODE_SIGN_IDENTITY"
-        exit 1
-        fi
-        
-        
+          echo "🔍 Extracting code signing identity from keychain..."
+          CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | grep -o '".*"' | head -n 1 | tr -d '"')
+          echo "✅ CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
+          if [ -z "$CODE_SIGN_IDENTITY" ]; then
+          echo "❌ Failed to extract CODE_SIGN_IDENTITY"
+          exit 1
+          fi
+          
+        # Download provisioning profile
+          echo "📥 Downloading provisioning profile..."
+          curl -o profile.mobileprovision "$PROFILE_URL"
+          
+        # Extract UUID of the provisioning profile
+          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
+          echo "✅ Provisioning Profile UUID: $UUID"
+          
+          PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision "$PROFILE_PATH"
+          
         # Update iOS deployment target
-        echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
-        sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
-
+          echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
+          sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
+          
         # CocoaPods setup
-        echo "🛠️ Installing CocoaPods..."
-        
-        # Clean Flutter and CocoaPods caches
-        flutter clean
-        rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
-        
-        # Install CocoaPods and required Ruby gem
-        set -x
-        gem install cocoapods --pre --silent
-        gem install securerandom -v 0.3.2 --silent
-        
-        # Install iOS dependencies via CocoaPods
-        pod install --project-directory=ios
-        
-        # Restore Flutter dependencies
-        flutter pub get
-        
-        # Generate iOS build files without code signing
-        flutter build ios --release --no-codesign
-        # Archive the app
-        echo "📦 Archiving app with code signing..."
-        xcodebuild -workspace ios/Runner.xcworkspace \
-                    -scheme Runner \
-                    -configuration Release \
-                    -sdk iphoneos \
-                    -destination "generic/platform=iOS" \
-                    -archivePath build/ios/archive/Runner.xcarchive \
-                    CODE_SIGN_STYLE=Manual \
-                    DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-                    PROVISIONING_PROFILE_SPECIFIER="$UUID" \
-                    PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-                    CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-                    OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
-                    archive
-        # ExportOptions.plist
-        cat <<EOF > ExportOptions.plist
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-        "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
+          echo "🛠️ Setting up CocoaPods and Flutter dependencies..."
+          flutter clean
+          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
+          
+          set -x
+          gem install cocoapods --pre --silent
+          gem install securerandom -v 0.3.2 --silent
+          pod install --project-directory=ios
+          flutter pub get
+          set +x
+          
+        # Build Flutter iOS app (no code signing)
+          flutter build ios --release --no-codesign
+          
+        # Archive app with manual signing
+          echo "📦 Archiving app with code signing..."
+          xcodebuild -workspace ios/Runner.xcworkspace \
+          -scheme Runner \
+          -configuration Release \
+          -sdk iphoneos \
+          -destination "generic/platform=iOS" \
+          -archivePath build/ios/archive/Runner.xcarchive \
+          CODE_SIGN_STYLE=Manual \
+          DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+          PROVISIONING_PROFILE_SPECIFIER="$UUID" \
+          PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+          CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+          OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
+          archive
+          
+        # Create ExportOptions.plist
+          cat <<EOF > ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+          "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
           <key>method</key>
           <string>ad-hoc</string>
           <key>provisioningProfiles</key>
           <dict>
-            <key>$BUNDLE_ID</key>
-            <string>$UUID</string>
+          <key>$BUNDLE_ID</key>
+          <string>$UUID</string>
           </dict>
           <key>signingStyle</key>
           <string>manual</string>
           <key>teamID</key>
           <string>$APPLE_TEAM_ID</string>
-        </dict>
-        </plist>
-        EOF
-
+          </dict>
+          </plist>
+          EOF
+          
         # Export IPA
-        echo "📦 Exporting IPA..."
-        xcodebuild -exportArchive \
+          echo "📦 Exporting IPA..."
+          xcodebuild -exportArchive \
           -archivePath build/ios/archive/Runner.xcarchive \
           -exportPath build/ios/ipa \
           -exportOptionsPlist ExportOptions.plist
-
-        echo "✅ IPA export complete: build/ios/ipa"
-
+        
+          echo "✅ IPA export complete: build/ios/ipa"
+        
         # Cleanup
-        security delete-keychain "$KEYCHAIN_NAME"
-        rm signing_cert.p12 profile.mobileprovision ExportOptions.plist
+          echo "🧹 Cleaning up..."
+          security delete-keychain "$KEYCHAIN_NAME"
+          rm -f signing_cert.p12 profile.mobileprovision ExportOptions.plist
+          
+          echo "🎉 Done!"
 
     - &setup_ios_signing_manual
       name: Setting Up iOS Signing (Manual)
