@@ -1027,20 +1027,18 @@ definitions:
         # Archive the app
         echo "📦 Archiving app with code signing..."
         xcodebuild -workspace ios/Runner.xcworkspace \
-          -scheme Runner \
-          -configuration Release \
-          -sdk iphoneos \
-          -destination "generic/platform=iOS" \
-          -configuration Release \
-          -archivePath build/ios/archive/Runner.xcarchive \
-          CODE_SIGN_STYLE=Manual \
-          DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-          PROVISIONING_PROFILE_SPECIFIER="$UUID" \
-          PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-          CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-          OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db"  \
-          archive
-
+                    -scheme Runner \
+                    -configuration Release \
+                    -sdk iphoneos \
+                    -destination "generic/platform=iOS" \
+                    -archivePath build/ios/archive/Runner.xcarchive \
+                    CODE_SIGN_STYLE=Manual \
+                    DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+                    PROVISIONING_PROFILE_SPECIFIER="$UUID" \
+                    PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+                    CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+                    OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
+                    archive
         # ExportOptions.plist
         cat <<EOF > ExportOptions.plist
         <?xml version="1.0" encoding="UTF-8"?>
