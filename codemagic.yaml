@@ -958,7 +958,7 @@ definitions:
           KEYCHAIN_PASSWORD="temp_key_pass"
           KEYCHAIN_NAME="ios-signing.keychain"
           
-        # Download and import certificate
+          # Download and import certificate
           echo "📥 Downloading certificate..."
           curl -o signing_cert.p12 "$CERT_URL"
           
@@ -968,16 +968,16 @@ definitions:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
           security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
           
-        # Import the certificate to the keychain
+          # Import the certificate to the keychain
           echo "🔑 Importing certificate..."
           security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
           
-        # Trust the keychain for signing tools
+          # Trust the keychain for signing tools
           echo "✅ Trusting keychain for code signing..."
           security list-keychains -s "$KEYCHAIN_NAME"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
         
-        # Extract CODE_SIGN_IDENTITY
+          # Extract CODE_SIGN_IDENTITY
           echo "🔍 Extracting code signing identity from keychain..."
           CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | grep -o '".*"' | head -n 1 | tr -d '"')
           echo "✅ CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
@@ -986,11 +986,11 @@ definitions:
           exit 1
           fi
           
-        # Download provisioning profile
+          # Download provisioning profile
           echo "📥 Downloading provisioning profile..."
           curl -o profile.mobileprovision "$PROFILE_URL"
           
-        # Extract UUID of the provisioning profile
+          # Extract UUID of the provisioning profile
           UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
           echo "✅ Provisioning Profile UUID: $UUID"
           
@@ -998,11 +998,11 @@ definitions:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp profile.mobileprovision "$PROFILE_PATH"
           
-        # Update iOS deployment target
+          # Update iOS deployment target
           echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
           sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
           
-        # CocoaPods setup
+          # CocoaPods setup
           echo "🛠️ Setting up CocoaPods and Flutter dependencies..."
           flutter clean
           rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
@@ -1014,10 +1014,10 @@ definitions:
           flutter pub get
           set +x
           
-        # Build Flutter iOS app (no code signing)
+          # Build Flutter iOS app (no code signing)
           flutter build ios --release --no-codesign
           
-        # Archive app with manual signing
+          # Archive app with manual signing
           echo "📦 Archiving app with code signing..."
           xcodebuild -workspace ios/Runner.xcworkspace \
           -scheme Runner \
@@ -1033,7 +1033,7 @@ definitions:
           OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
           archive
           
-        # Create ExportOptions.plist
+          # Create ExportOptions.plist
           cat <<EOF > ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -1055,7 +1055,7 @@ definitions:
           </plist>
           EOF
           
-        # Export IPA
+          # Export IPA
           echo "📦 Exporting IPA..."
           xcodebuild -exportArchive \
           -archivePath build/ios/archive/Runner.xcarchive \
@@ -1064,7 +1064,7 @@ definitions:
         
           echo "✅ IPA export complete: build/ios/ipa"
         
-        # Cleanup
+          # Cleanup
           echo "🧹 Cleaning up..."
           security delete-keychain "$KEYCHAIN_NAME"
           rm -f signing_cert.p12 profile.mobileprovision ExportOptions.plist
