@@ -1044,8 +1044,21 @@ definitions:
           --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD"
           
           # Extract CODE_SIGN_IDENTITY from the .p12 file
-          CODE_SIGN_IDENTITY=$(openssl pkcs12 -in signing_cert.p12 -nokeys -info -passin pass:$CERT_PASSWORD | grep "friendlyName" | awk -F ': ' '{print $2}')
+          security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | awk '{print $2}' | head -n 1)
           echo "CODE_SIGN_IDENTITY=$CODE_SIGN_IDENTITY"
+          
+          echo "🛠️ Setting UTF-8 encoding for CocoaPods..."
+          export LANG=en_US.UTF-8
+          export LC_ALL=en_US.UTF-8
+          flutter clean
+          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
+          sudo gem install cocoapods
+          cd ios
+          pod reintegrate
+          pod install --repo-update
+          cd ..
+          flutter pub get
           
            # Archive the app
             echo "📦 Archiving app with CodeSigning the IPA File..."
@@ -1090,6 +1103,9 @@ definitions:
             -exportOptionsPlist ExportOptions.plist
         
             echo "✅ IPA export complete: build/ios/ipa"
+            security delete-keychain "$KEYCHAIN_NAME"
+            rm signing_cert.p12 profile.mobileprovision
+            
 
 #  --------------------------------------------
 #        echo "🔐 Setting up iOS signing (manual)..."
@@ -1601,39 +1617,41 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
+      - *setup_ios_signing_manual
+
         # 🧼 Clean and set minimum iOS deployment target
-      - name: Update Podfile and Reinstall CocoaPods
-        script: |
-          echo "🛠️ Setting UTF-8 encoding for CocoaPods..."
-          export LANG=en_US.UTF-8
-          export LC_ALL=en_US.UTF-8
-          
-          echo "💻 Shell in use: $SHELL"
-          echo "🌍 Current language: $LANG"
-          
-          # Clean up old Pod configurations and Flutter cache
-          echo "🧹 Cleaning up CocoaPods and Flutter cache..."
-          flutter clean
-          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
-          
-          # Update CocoaPods
-          echo "🚀 Installing/Updating CocoaPods..."
-          sudo gem install cocoapods
-          
-          # Reinstall pods and update the repo
-          echo "🔄 Reinstalling CocoaPods dependencies..."
-          cd ios || exit
-          pod reintegrate
-          pod install --repo-update
-          cd ..
-          
-          # Final cleanup and dependency fetch
-          echo "🔧 Final cleanup and fetching dependencies..."
-          flutter clean
-          xcodebuild clean
-          flutter pub get
-        
-          echo "✅ Pod update complete. CocoaPods version: $(pod --version)"
+#      - name: Update Podfile and Reinstall CocoaPods
+#        script: |
+#          echo "🛠️ Setting UTF-8 encoding for CocoaPods..."
+#          export LANG=en_US.UTF-8
+#          export LC_ALL=en_US.UTF-8
+#
+#          echo "💻 Shell in use: $SHELL"
+#          echo "🌍 Current language: $LANG"
+#
+#          # Clean up old Pod configurations and Flutter cache
+#          echo "🧹 Cleaning up CocoaPods and Flutter cache..."
+#          flutter clean
+#          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
+#
+#          # Update CocoaPods
+#          echo "🚀 Installing/Updating CocoaPods..."
+#          sudo gem install cocoapods
+#
+#          # Reinstall pods and update the repo
+#          echo "🔄 Reinstalling CocoaPods dependencies..."
+#          cd ios || exit
+#          pod reintegrate
+#          pod install --repo-update
+#          cd ..
+#
+#          # Final cleanup and dependency fetch
+#          echo "🔧 Final cleanup and fetching dependencies..."
+#          flutter clean
+#          xcodebuild clean
+#          flutter pub get
+#
+#          echo "✅ Pod update complete. CocoaPods version: $(pod --version)"
        
       
 #
@@ -1663,7 +1681,7 @@ workflows:
 #              --workspace ios/Runner.xcworkspace \
 #              --scheme Runner \
 #              --archive-flags="-allowProvisioningUpdates"
-      - *setup_ios_signing_manual
+
 #      - *build_ipa
 
     artifacts:
