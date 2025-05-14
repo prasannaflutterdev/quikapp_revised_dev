@@ -991,6 +991,10 @@ definitions:
         security list-keychains -s "$KEYCHAIN_NAME"
         security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
         security find-identity -v -p codesigning
+        
+        echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
+        sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
+        cat ios/Podfile | grep platform
       
           # Flutter build
           echo "⚙️ Building Flutter iOS project..."
