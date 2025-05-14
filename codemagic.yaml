@@ -1017,6 +1017,9 @@ definitions:
         xcodebuild -workspace ios/Runner.xcworkspace \
           -scheme Runner \
           -configuration Release \
+          -sdk iphoneos \
+          -destination "generic/platform=iOS" \
+          -configuration Release \
           -archivePath build/ios/archive/Runner.xcarchive \
           CODE_SIGN_STYLE=Manual \
           DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
