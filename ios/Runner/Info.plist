@@ -77,5 +77,40 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+    <!-- Add these entries inside the dict tag -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Music!</string>
+    <key>UISupportsDocumentBrowser</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>camera</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>microphone</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>location</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>location</string>
+    <key>NSContactsUsageDescription</key>
+    <string>contacts</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>calendar</string>
+    <key>NSMotionUsageDescription</key>
+    <string>motion</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>speech</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>face id</string>
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <false/>
 </dict>
 </plist>
