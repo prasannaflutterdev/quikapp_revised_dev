@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:quickappproj/module/myapp.dart';
-import 'package:quickappproj/utils/menu_parser.dart';
-import 'dart:convert'; // Add this import
+
+
+
+import 'package:quikapp/module/home/home_screen.dart'; // Add this import
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
@@ -23,32 +24,12 @@ void main() {
     const testBottomMenuIconPosition = "above";
     const testIsDeepLink = true;
     const testIsLoadIndicator = true;
-    final testBottomMenuItems = parseBottomMenuItems(jsonEncode([
-      {"icon": "home", "label": "Home", "url": "https://example.com/home"},
-    ]));
+
 
     // Build the widget
     await tester.pumpWidget(
-      MaterialApp(
-        home: MyApp(
-          webUrl: testWebUrl,
-          isSplash: testIsSplashEnabled,
-          splashLogo: testSplashUrl,
-          splashBg: testSplashBgUrl,
-          splashDuration: testSplashDuration,
-          splashAnimation: testSplashAnimation,
-          taglineColor: testSplashTaglineColor,
-          spbgColor: testSplashBgColor,
-          isBottomMenu: testIsBottomMenu,
-          bottomMenuItems: testBottomMenuItems,
-          isDeeplink: testIsDeepLink,
-          backgroundColor: testBottomMenuBgColor,
-          activeTabColor: testBottomMenuActiveTabColor,
-          textColor: testBottomMenuTextColor,
-          iconColor: testBottomMenuIconColor,
-          iconPosition: testBottomMenuIconPosition,
-          isLoadIndicator: testIsLoadIndicator,
-        ),
+      const MaterialApp(
+        home: HomeScreen(),
       ),
     );
 

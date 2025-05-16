@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'bottom_nav_config.dart';
 import 'icon_handler.dart';
@@ -16,7 +15,7 @@ class MainHome extends StatefulWidget {
   final List<String> bottomMenuVisibleOn;
 
   const MainHome({
-    Key? key,
+    super.key,
     required this.initialUrl,
     required this.bottomMenuItems,
     required this.isBottomMenu,
@@ -26,14 +25,14 @@ class MainHome extends StatefulWidget {
     required this.bottomMenuActiveTabColor,
     required this.bottomMenuIconPosition,
     required this.bottomMenuVisibleOn,
-  }) : super(key: key);
+  });
 
   @override
   State<MainHome> createState() => _MainHomeState();
 }
 
 class _MainHomeState extends State<MainHome> {
-  late final WebViewController webViewController;
+  InAppWebViewController? webViewController;
   int _currentIndex = 0;
   bool _isLoading = true;
   String _currentUrl = '';
@@ -42,27 +41,6 @@ class _MainHomeState extends State<MainHome> {
   void initState() {
     super.initState();
     _currentUrl = widget.initialUrl;
-    webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-              _currentUrl = url;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            debugPrint('Web resource error: ${error.description}');
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.initialUrl));
   }
 
   @override
@@ -70,7 +48,27 @@ class _MainHomeState extends State<MainHome> {
     return Scaffold(
       body: Stack(
         children: [
-          WebViewWidget(controller: webViewController),
+          InAppWebView(
+            initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
+            onWebViewCreated: (controller) {
+              webViewController = controller;
+            },
+            onLoadStart: (controller, url) {
+              setState(() {
+                _isLoading = true;
+                _currentUrl = url?.toString() ?? '';
+              });
+            },
+            onLoadStop: (controller, url) {
+              setState(() {
+                _isLoading = false;
+                _currentUrl = url?.toString() ?? '';
+              });
+            },
+            onLoadError: (controller, url, code, message) {
+              debugPrint('Web resource error: $message');
+            },
+          ),
           if (_isLoading)
             const Center(
               child: CircularProgressIndicator(),
@@ -79,34 +77,34 @@ class _MainHomeState extends State<MainHome> {
       ),
       bottomNavigationBar: widget.isBottomMenu
           ? BottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-                final item = widget.bottomMenuItems[index];
-                webViewController.loadUrl(
-                  urlRequest: URLRequest(url: WebUri(item['url'])),
-                );
-              },
-              backgroundColor: widget.bottomMenuBgColor,
-              selectedItemColor: widget.bottomMenuActiveTabColor,
-              unselectedItemColor: widget.bottomMenuIconColor,
-              type: BottomNavigationBarType.fixed,
-              items: widget.bottomMenuItems.map((item) {
-                return BottomNavigationBarItem(
-                  icon: Icon(
-                    IconHandler.getIconByName(item['icon']),
-                    color: widget.bottomMenuIconColor,
-                  ),
-                  activeIcon: Icon(
-                    IconHandler.getIconByName(item['icon']),
-                    color: widget.bottomMenuActiveTabColor,
-                  ),
-                  label: item['label'],
-                );
-              }).toList(),
-            )
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          final item = widget.bottomMenuItems[index];
+          webViewController?.loadUrl(
+            urlRequest: URLRequest(url: WebUri(item['url'])),
+          );
+        },
+        backgroundColor: widget.bottomMenuBgColor,
+        selectedItemColor: widget.bottomMenuActiveTabColor,
+        unselectedItemColor: widget.bottomMenuIconColor,
+        type: BottomNavigationBarType.fixed,
+        items: widget.bottomMenuItems.map((item) {
+          return BottomNavigationBarItem(
+            icon: Icon(
+              IconHandler.getIconByName(item['icon']),
+              color: widget.bottomMenuIconColor,
+            ),
+            activeIcon: Icon(
+              IconHandler.getIconByName(item['icon']),
+              color: widget.bottomMenuActiveTabColor,
+            ),
+            label: item['label'],
+          );
+        }).toList(),
+      )
           : null,
     );
   }
