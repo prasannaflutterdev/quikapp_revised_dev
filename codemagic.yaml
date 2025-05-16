@@ -59,7 +59,7 @@ definitions:
     #- &dsym $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     # - &app $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
     #    - &android_abb build/**/outputs/**/*.aab
-#    - &android_apk build/**/outputs/**/*.apk
+    #    - &android_apk build/**/outputs/**/*.apk
     - &android_abb build/**/outputs/**/*.aab
     - &android_apk build/**/outputs/**/*.apk
     - &ios_app build/ios/ipa/*.ipa
@@ -76,8 +76,6 @@ definitions:
         failure: true
 
   scripts:
-
-
     - &debug_env
       name: Debug Environment Variables
       script: |
@@ -89,34 +87,34 @@ definitions:
         echo "VERSION_CODE: $VERSION_CODE" 
         echo "PKG_NAME: $PKG_NAME"
         echo "BUNDLE_ID: $BUNDLE_ID"
-        
+
         echo "*********** App Customization Configuration ***********"
         echo "Splash screen: $IS_SPLASH"
         echo "Pull to refresh: $IS_PULLDOWN"
         echo "Loading indicators: $IS_LOAD_IND"
         echo "Bottom navigation bar: $IS_BOTTOMMENU"
         echo "Deep linking: $IS_DEEPLINK"
-        
+
         echo "*********** Push Notification Configuration ***********"
         echo "PUSH_NOTIFY: $PUSH_NOTIFY"
-        
+
         echo "*********** Android Keystore ***********"
         echo "KEY_STORE: $KEY_STORE"
         echo "CM_KEYSTORE_PASSWORD: $CM_KEYSTORE_PASSWORD"
         echo "CM_KEY_ALIAS: $CM_KEY_ALIAS"
         echo "CM_KEY_PASSWORD: $CM_KEY_PASSWORD"
-        
+
         echo "*********** IOS Keystore ***********"
         echo "APNS_KEY_ID: $APNS_KEY_ID"
         echo "TEAM_ID: $APPLE_TEAM_ID"
         echo "APNS_AUTH_KEY_URL: $APNS_AUTH_KEY_URL"
-        
+
         echo "*********** Firebase Android config file ***********"
         echo "firebase_config_android: $firebase_config_android"
-        
+
         echo "*********** Firebase IOS config file ***********"
         echo "firebase_config_ios: $firebase_config_ios"
-        
+
         echo "*********** Splash Configuration ***********"
         echo "SPLASH: $SPLASH"
         echo "SPLASH_BG:$SPLASH_BG"
@@ -134,7 +132,7 @@ definitions:
         echo "BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR"
         echo "BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION"
         echo "BOTTOMMENU_VISIBLE_ON: $BOTTOMMENU_VISIBLE_ON"
-        
+
         echo "*********** Permissions ***********"
         echo "IS_CAMERA: $IS_CAMERA"
         echo "IS_LOCATION: $IS_LOCATION"
@@ -143,20 +141,18 @@ definitions:
         echo "IS_CONTACT: $IS_CONTACT"
         echo "IS_BIOMETRIC: $IS_BIOMETRIC"
         echo "IS_CALENDAR: $IS_CALENDAR"
-        
+
         echo "*********** Publish Configuration ***********"
         echo "EMAIL_ID: $EMAIL_ID"
-        
-
 
     - &get_splash
       name: Get splash screen image from splash image from Url
       script: |
         if [ "$IS_SPLASH" = "true" ]; then
           echo "🚀 Started: Downloading splash assets"
-        
+
           mkdir -p assets/images/
-        
+
           # Download splash logo
           echo "⬇️ Downloading splash logo from: $SPLASH"
           wget -O assets/images/splash.png "$SPLASH"
@@ -164,12 +160,12 @@ definitions:
             echo "⚠️ Certificate issue or download failed. Retrying with --no-check-certificate..."
             wget --no-check-certificate -O assets/images/splash.png "$SPLASH"
           fi
-        
+
           if [ ! -f assets/images/splash.png ]; then
             echo "❌ Error: Failed to download SPLASH logo"
             exit 1
           fi
-        
+
           # Download splash background (optional)
           if [ -n "$SPLASH_BG" ]; then
             echo "⬇️ Downloading splash background from: $SPLASH_BG"
@@ -178,7 +174,7 @@ definitions:
               echo "⚠️ Certificate issue or download failed. Retrying with --no-check-certificate..."
               wget --no-check-certificate -O assets/images/splash_bg.png "$SPLASH_BG"
             fi
-        
+
             if [ ! -f assets/images/splash_bg.png ]; then
               echo "❌ Error: Failed to download SPLASH background"
               exit 1
@@ -186,18 +182,12 @@ definitions:
           else
             echo "ℹ️ No SPLASH_BG provided, skipping background download"
           fi
-        
+
           flutter pub get
           echo "✅ Completed: Splash assets downloaded"
         else
           echo "⏭️ Skipping splash asset download (IS_SPLASH != true)"
         fi
-
-
-
-
-
-   
 
     - &change_proj_name
       name: Change Project Name
@@ -205,16 +195,16 @@ definitions:
         echo "App Name: $APP_NAME"
         # 2️⃣ Sanitize: lowercase, remove special characters, replace spaces with underscores
           SANITIZED_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9 ' | tr ' ' '_')
-        
+
         # 3️⃣ Extract old name from pubspec.yaml
         OLD_NAME_LINE=$(grep '^name: ' pubspec.yaml)
         OLD_NAME=$(echo "$OLD_NAME_LINE" | cut -d ' ' -f2)
-        
+
         echo "🔁 Renaming project from '$OLD_NAME' to '$SANITIZED_NAME'..."
-        
+
         # Update pubspec.yaml
         sed -i '' "s/^name: .*/name: $SANITIZED_NAME/" pubspec.yaml
-        
+
         # Update Dart imports
           echo "🔄 Updating Dart package imports..."
           grep -rl "package:$OLD_NAME" lib/ | xargs sed -i '' "s/package:$OLD_NAME/package:$SANITIZED_NAME/g"
@@ -292,7 +282,7 @@ definitions:
 
           echo "🔢 VERSION_NAME: $VERSION_NAME"
           echo "🔢 VERSION_CODE: $VERSION_CODE"
-        
+
           echo "🔧 Ensuring valid version in pubspec.yaml: $VERSION_NAME+$VERSION_CODE"
           # Replace or add version line in pubspec.yaml
           if grep -q "^version: " pubspec.yaml; then
@@ -308,19 +298,18 @@ definitions:
 
            echo "✅ Launcher icons generated successfully"
 
-
     - &change_app_name
       name: Change app name
       script: |
         echo "🚀 Changing app name to: $APP_NAME"
-      
+
           flutter pub run rename setAppName --value "$APP_NAME"
           echo "🔢 VERSION_NAME: $VERSION_NAME"
           echo "🔢 VERSION_CODE: $VERSION_CODE"
             # Default values
           VERSION_NAME="${VERSION_NAME:-1.0.0}"
           VERSION_CODE="${VERSION_CODE:-100}"
-        
+
           # Check if VERSION_NAME is empty or not set
           if [ -z "$VERSION_NAME" ]; then
             VERSION_NAME=$DEFAULT_VERSION_NAME
@@ -335,7 +324,7 @@ definitions:
 
           echo "🔢 VERSION_NAME: $VERSION_NAME"
           echo "🔢 VERSION_CODE: $VERSION_CODE"
-      
+
           echo "🔧 Ensuring valid version in pubspec.yaml: $VERSION_NAME+$VERSION_CODE"
           # Replace or add version line in pubspec.yaml
           if grep -q "^version: " pubspec.yaml; then
@@ -343,27 +332,23 @@ definitions:
           else
           echo "version: $VERSION_NAME+$VERSION_CODE" >> pubspec.yaml
           fi
-      
+
           flutter pub get
-      
+
           echo "✅ App name changed and version set successfully"
-
-
-
-   
 
     - &Inject_Firebase_iOS_Push
       name: Firebase Push Notification Setup for iOS
       script: |
         if [ "$PUSH_NOTIFY" = "true" ]; then
           echo "🔔 Enabling Firebase Push Notifications for iOS..."
-        
+
           # 1. Download and apply Firebase config
           mkdir -p firebase/ios
           if [ -n "$firebase_config_ios" ]; then
             wget -O firebase/ios/GoogleService-Info.plist "$firebase_config_ios"
           fi
-        
+
           if [ -f "firebase/ios/GoogleService-Info.plist" ]; then
             cp firebase/ios/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
             echo "✅ GoogleService-Info.plist copied."
@@ -371,7 +356,7 @@ definitions:
             echo "❌ Missing GoogleService-Info.plist. Cannot proceed with Firebase setup."
             exit 1
           fi
-        
+
           # 2. Add Firebase SDK (via committed Package.resolved)
           if [ -f "firebase/ios/Package.resolved" ]; then
             mkdir -p ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
@@ -380,13 +365,13 @@ definitions:
           else
             echo "⚠️ Package.resolved not found. Firebase SDK must be added manually in Xcode."
           fi
-        
+
           # 3. Download APNs Auth Key if provided (Optional)
           if [ -n "$APNS_AUTH_KEY_URL" ]; then
             wget -O firebase/ios/AuthKey.p8 "$APNS_AUTH_KEY_URL"
             echo "📥 Downloaded AuthKey.p8 for APNs"
           fi
-        
+
           # 4. Check APNs entitlements
           if grep -q "aps-environment" ios/Runner/Runner.entitlements; then
             echo "✅ APNs entitlements already enabled."
@@ -403,31 +388,29 @@ definitions:
     - &get_json
       name: Get JSON file
       script: |
-       
-          if [ "$PUSH_NOTIFY" = "true" ]; then
-          echo "📥 Downloading google-services.json..."
-        
-          # Ensure target directories exist
-          mkdir -p android/app
-          mkdir -p assets
-        
-          # Try downloading with SSL verification first
-          wget --spider --quiet "$firebase_config_android"
-          if [ $? -ne 0 ]; then
-          echo "⚠️ SSL verification failed. Retrying with --no-check-certificate..."
-          WGET_OPTS="--no-check-certificate"
-          else
-          WGET_OPTS=""
-          fi
-        
-          # Download the file(s) using determined option
-          wget $WGET_OPTS -O android/app/google-services.json "$firebase_config_android"
-          wget $WGET_OPTS -O assets/google-services.json "$firebase_config_android"
-          else
-          echo "🚫 Firebase config skipped (PUSH_NOTIFY is not true)"
-          fi
 
+        if [ "$PUSH_NOTIFY" = "true" ]; then
+        echo "📥 Downloading google-services.json..."
 
+        # Ensure target directories exist
+        mkdir -p android/app
+        mkdir -p assets
+
+        # Try downloading with SSL verification first
+        wget --spider --quiet "$firebase_config_android"
+        if [ $? -ne 0 ]; then
+        echo "⚠️ SSL verification failed. Retrying with --no-check-certificate..."
+        WGET_OPTS="--no-check-certificate"
+        else
+        WGET_OPTS=""
+        fi
+
+        # Download the file(s) using determined option
+        wget $WGET_OPTS -O android/app/google-services.json "$firebase_config_android"
+        wget $WGET_OPTS -O assets/google-services.json "$firebase_config_android"
+        else
+        echo "🚫 Firebase config skipped (PUSH_NOTIFY is not true)"
+        fi
 
     - &Inject_Firebase
       name: Inject Firebase and buildscript block
@@ -460,24 +443,24 @@ definitions:
       script: |
         if [ "$PUSH_NOTIFY" = "true" ]; then
           echo "🔧 Updating Android and iOS SDK versions..."
-        
+
           # ───── Android SDK Versions ─────
           echo "📱 Updating Android minSdkVersion and targetSdkVersion in build.gradle"
           sed -i.bak 's/minSdkVersion\s*=.*$/minSdkVersion 21/' android/app/build.gradle
           sed -i.bak 's/targetSdkVersion\s*=.*$/targetSdkVersion 34/' android/app/build.gradle
           echo "✅ Android SDK versions updated"
-        
+
           # ───── iOS Minimum Target Version ─────
           echo "🍏 Updating iOS minimum deployment target in Podfile..."
           PODFILE_PATH="ios/Podfile"
-        
+
           if [ -f "$PODFILE_PATH" ]; then
             sed -i.bak -E "s/platform :ios, '[0-9.]+'/platform :ios, '12.0'/" "$PODFILE_PATH"
             echo "✅ iOS minimum deployment target updated to 12.0"
           else
             echo "⚠️ Podfile not found. Skipping iOS deployment target update."
           fi
-        
+
           # Optional: iOS project.pbxproj iOS Deployment Target
           IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
           if [ -f "$IOS_PROJECT_FILE" ]; then
@@ -488,89 +471,89 @@ definitions:
           echo "🚫 SDK version update skipped (PUSH_NOTIFY is not true)"
         fi
 
-#    - &Update_App_Version
-#      name: Inject Version Info into pubspec, build.gradle (Android) & Xcode project (iOS)
-#      script: |
-#        # Default values
-#        VERSION_NAME="${VERSION_NAME:-1.0.0}"
-#        VERSION_CODE="${VERSION_CODE:-100}"
-#        # Check if VERSION_NAME is empty or not set
-#         if [ -z "$VERSION_NAME" ]; then
-#           VERSION_NAME=$DEFAULT_VERSION_NAME
-#           echo "🔢 Setting DEFAULT_VERSION_NAME"
-#         fi
-#
-#         # Check if VERSION_CODE is empty or not set
-#         if [ -z "$VERSION_CODE" ]; then
-#           VERSION_CODE=$DEFAULT_VERSION_CODE
-#           echo "🔢 Setting DEFAULT_VERSION_CODE"
-#         fi
-#
-#         echo "🔢 VERSION_NAME: $VERSION_NAME"
-#         echo "🔢 VERSION_CODE: $VERSION_CODE"
-#        echo "🔄 Updating version to ${VERSION_NAME}+${VERSION_CODE}"
-#
-#        # ───── pubspec.yaml ─────
-#        sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
-#        echo "✅ Updated pubspec.yaml"
-#
-#        # ───── Android build.gradle ─────
-#        echo "🔧 Updating Android build.gradle..."
-#        sed -i'' -e "s/versionCode.*/versionCode ${VERSION_CODE}/" android/app/build.gradle
-#        sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
-#        echo "✅ Android version updated: $VERSION_NAME ($VERSION_CODE)"
-#
-#        # ───── iOS: project.pbxproj ─────
-#        echo "🍏 Updating iOS version info in project.pbxproj..."
-#        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
-#
-#        if [ -f "$IOS_PROJECT_FILE" ]; then
-#          sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
-#          sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
-#          echo "✅ iOS version updated: $VERSION_NAME ($VERSION_CODE)"
-#        else
-#          echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
-#          exit 1
-#        fi
-#
-#
-#
+    #    - &Update_App_Version
+    #      name: Inject Version Info into pubspec, build.gradle (Android) & Xcode project (iOS)
+    #      script: |
+    #        # Default values
+    #        VERSION_NAME="${VERSION_NAME:-1.0.0}"
+    #        VERSION_CODE="${VERSION_CODE:-100}"
+    #        # Check if VERSION_NAME is empty or not set
+    #         if [ -z "$VERSION_NAME" ]; then
+    #           VERSION_NAME=$DEFAULT_VERSION_NAME
+    #           echo "🔢 Setting DEFAULT_VERSION_NAME"
+    #         fi
+    #
+    #         # Check if VERSION_CODE is empty or not set
+    #         if [ -z "$VERSION_CODE" ]; then
+    #           VERSION_CODE=$DEFAULT_VERSION_CODE
+    #           echo "🔢 Setting DEFAULT_VERSION_CODE"
+    #         fi
+    #
+    #         echo "🔢 VERSION_NAME: $VERSION_NAME"
+    #         echo "🔢 VERSION_CODE: $VERSION_CODE"
+    #        echo "🔄 Updating version to ${VERSION_NAME}+${VERSION_CODE}"
+    #
+    #        # ───── pubspec.yaml ─────
+    #        sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+    #        echo "✅ Updated pubspec.yaml"
+    #
+    #        # ───── Android build.gradle ─────
+    #        echo "🔧 Updating Android build.gradle..."
+    #        sed -i'' -e "s/versionCode.*/versionCode ${VERSION_CODE}/" android/app/build.gradle
+    #        sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
+    #        echo "✅ Android version updated: $VERSION_NAME ($VERSION_CODE)"
+    #
+    #        # ───── iOS: project.pbxproj ─────
+    #        echo "🍏 Updating iOS version info in project.pbxproj..."
+    #        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+    #
+    #        if [ -f "$IOS_PROJECT_FILE" ]; then
+    #          sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
+    #          sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
+    #          echo "✅ iOS version updated: $VERSION_NAME ($VERSION_CODE)"
+    #        else
+    #          echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
+    #          exit 1
+    #        fi
+    #
+    #
+    #
 
     - &update_package_names
       name: Update Android & iOS Package Name / Bundle ID
       script: |
         echo "🔧 Updating Android and iOS package name (bundle ID)..."
-        
+
         # Validate package/bundle ID format (Java-style, dot-separated)
         if [[ ! "$PKG_NAME" =~ ^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+$ ]]; then
         echo "❌ ERROR: Invalid package/bundle identifier: $PKG_NAME"
         exit 1
         fi
-        
+
         echo "✔ Package name / Bundle ID: $PKG_NAME"
-        
+
                echo "────────────── ANDROID UPDATE ──────────────"
                echo "📦 Updating Android package..."
                flutter pub run rename setBundleId --value "$PKG_NAME"
-        
+
                # Update AndroidManifest.xml
                sed -i "s/package=\"[^\"]*\"/package=\"$PKG_NAME\"/g" android/app/src/main/AndroidManifest.xml
                # For macOS: sed -i '' ...
                sed -i "s/applicationId \"[^\"]*\"/applicationId \"$PKG_NAME\"/g" android/app/build.gradle
-        
+
                echo "✅ Android package updated."
-        
+
                echo "────────────── iOS UPDATE ──────────────"
                echo "🍏 Updating iOS bundle identifier..."
                IOS_PROJECT_PATH="ios/Runner.xcodeproj/project.pbxproj"
-        
+
                if [ -f "$IOS_PROJECT_PATH" ]; then
                  sed -i "s/PRODUCT_BUNDLE_IDENTIFIER = .*;/PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID;/g" "$IOS_PROJECT_PATH"
                  echo "✅ iOS bundle identifier updated."
                else
                  echo "❌ iOS project file not found at $IOS_PROJECT_PATH"
                  exit 1
-               fi         
+               fi
 
     - &build_ipa
       name: Building iOS App with Feature Flags
@@ -579,11 +562,11 @@ definitions:
         echo "❌ Error: Certificates or provisioning profile missing."
         exit 1
         fi
-        
+
         echo "🔑 Setting up provisioning profile for build..."
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-        
+
         echo "✅ Building iOS IPA..."
         flutter build ipa \
         --release \
@@ -631,9 +614,9 @@ definitions:
         --dart-define=CM_KEY_ALIAS="$CM_KEY_ALIAS" \
         --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD" \
         --export-options-plist=ExportOptions.plist > flutter_build_ios.log
-        
+
         echo "✅ IPA build completed successfully."
-        
+
         echo "🧹 Cleaning up certificates and profiles..."
         security delete-keychain build.keychain
         rm -rf ios_certificates
@@ -739,29 +722,29 @@ definitions:
          # Default values
         VERSION_NAME="${VERSION_NAME:-1.0.0}"
         VERSION_CODE="${VERSION_CODE:-100}"
-        
+
         # Check if VERSION_NAME is empty or not set
         if [ -z "$VERSION_NAME" ]; then
           VERSION_NAME=$DEFAULT_VERSION_NAME
           echo "🔢 Setting DEFAULT_VERSION_NAME"
         fi
-        
+
         # Check if VERSION_CODE is empty or not set
         if [ -z "$VERSION_CODE" ]; then
           VERSION_CODE=$DEFAULT_VERSION_CODE
           echo "🔢 Setting DEFAULT_VERSION_CODE"
         fi
-        
+
         echo "🔢 VERSION_NAME: $VERSION_NAME"
         echo "🔢 VERSION_CODE: $VERSION_CODE"
-        
+
         echo "🔧 Ensuring valid version in pubspec.yaml: $VERSION_NAME+$VERSION_CODE"
         if grep -q "^version: " pubspec.yaml; then
           sed -i.bak -E "s/^version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
           else
         echo "version: $VERSION_NAME+$VERSION_CODE" >> pubspec.yaml
           fi
-  
+
         flutter pub get
         if [ $? -ne 0 ]; then
         echo "❌ Failed to get Flutter dependencies"
@@ -880,196 +863,196 @@ definitions:
     - &key_store
       name: Setup Android keystore and insert Gradle signing block
       script: |
-          echo "📦 Downloading keystore..."
-          if curl -f -o android/app/keystore.jks "$KEY_STORE"; then
-            echo "✅ Keystore downloaded successfully."
-          else
-            echo "❌ Failed to download keystore."
-            exit 1
-          fi
-          
-          echo "📝 Writing key.properties..."
-          cat > android/key.properties <<EOF
-          storeFile=keystore.jks
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          keyPassword=$CM_KEY_PASSWORD
+        echo "📦 Downloading keystore..."
+        if curl -f -o android/app/keystore.jks "$KEY_STORE"; then
+          echo "✅ Keystore downloaded successfully."
+        else
+          echo "❌ Failed to download keystore."
+          exit 1
+        fi
+
+        echo "📝 Writing key.properties..."
+        cat > android/key.properties <<EOF
+        storeFile=keystore.jks
+        storePassword=$CM_KEYSTORE_PASSWORD
+        keyAlias=$CM_KEY_ALIAS
+        keyPassword=$CM_KEY_PASSWORD
+        EOF
+
+        if [ -f android/key.properties ]; then
+          echo "✅ key.properties written successfully."
+        else
+          echo "❌ Failed to write key.properties."
+          exit 1
+        fi
+
+        echo "📦 Injecting dynamic signing configs..."
+
+          GRADLE_FILE="android/app/build.gradle"
+          SIGNING_BLOCK=$(cat <<EOF
+          release {
+          storeFile file("keystore.jks")
+          storePassword project.findProperty("storePassword")
+          keyAlias project.findProperty("keyAlias")
+          keyPassword project.findProperty("keyPassword")
+          }
           EOF
+          )
           
-          if [ -f android/key.properties ]; then
-            echo "✅ key.properties written successfully."
-          else
-            echo "❌ Failed to write key.properties."
-            exit 1
-          fi
-        
-          echo "📦 Injecting dynamic signing configs..."
-  
-            GRADLE_FILE="android/app/build.gradle"
-            SIGNING_BLOCK=$(cat <<EOF
-            release {
-            storeFile file("keystore.jks")
-            storePassword project.findProperty("storePassword")
-            keyAlias project.findProperty("keyAlias")
-            keyPassword project.findProperty("keyPassword")
-            }
-            EOF
-            )
-            
-            BUILD_TYPE_BLOCK=$(cat <<EOF
-            release {
-            signingConfig signingConfigs.release
-            shrinkResources true
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            }
-            EOF
-            )
-            
-          # Inject into signingConfigs
-          if grep -q "signingConfigs" "$GRADLE_FILE"; then
-            awk -v block="$SIGNING_BLOCK" '
-            /signingConfigs[ \t]*{/ && !x { print; print block; x=1; next }1
-            ' "$GRADLE_FILE" > tmp && mv tmp "$GRADLE_FILE"
-            echo "✅ Signing config injected."
-          else
-            echo "❌ signingConfigs block not found in build.gradle"
-            exit 1
-          fi
+          BUILD_TYPE_BLOCK=$(cat <<EOF
+          release {
+          signingConfig signingConfigs.release
+          shrinkResources true
+          minifyEnabled true
+          proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+          }
+          EOF
+          )
           
-          # Inject into buildTypes
-          if grep -q "buildTypes" "$GRADLE_FILE"; then
-            awk -v block="$BUILD_TYPE_BLOCK" '
-            /buildTypes[ \t]*{/ && !x { print; print block; x=1; next }1
-            ' "$GRADLE_FILE" > tmp && mv tmp "$GRADLE_FILE"
-            echo "✅ Release build type injected."
-          else
-            echo "❌ buildTypes block not found in build.gradle"
-            exit 1
-          fi
+        # Inject into signingConfigs
+        if grep -q "signingConfigs" "$GRADLE_FILE"; then
+          awk -v block="$SIGNING_BLOCK" '
+          /signingConfigs[ \t]*{/ && !x { print; print block; x=1; next }1
+          ' "$GRADLE_FILE" > tmp && mv tmp "$GRADLE_FILE"
+          echo "✅ Signing config injected."
+        else
+          echo "❌ signingConfigs block not found in build.gradle"
+          exit 1
+        fi
+
+        # Inject into buildTypes
+        if grep -q "buildTypes" "$GRADLE_FILE"; then
+          awk -v block="$BUILD_TYPE_BLOCK" '
+          /buildTypes[ \t]*{/ && !x { print; print block; x=1; next }1
+          ' "$GRADLE_FILE" > tmp && mv tmp "$GRADLE_FILE"
+          echo "✅ Release build type injected."
+        else
+          echo "❌ buildTypes block not found in build.gradle"
+          exit 1
+        fi
     - &Setup_IOS
       name: Setting Up IOS Build
       script: |
-          echo "🔐 Setting up iOS code signing..."
-  
-          export LC_ALL=en_US.UTF-8
-          export LANG=en_US.UTF-8
-          
-          KEYCHAIN_PASSWORD="temp_key_pass"
-          KEYCHAIN_NAME="ios-signing.keychain"
-          
-          # Download and import certificate
-          echo "📥 Downloading certificate..."
-          curl -o signing_cert.p12 "$CERT_URL"
-          
-          echo "🔐 Creating temporary keychain..."
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
-          
-          # Import the certificate to the keychain
-          echo "🔑 Importing certificate..."
-          security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          
-          # Trust the keychain for signing tools
-          echo "✅ Trusting keychain for code signing..."
-          security list-keychains -s "$KEYCHAIN_NAME"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-        
-          # Extract CODE_SIGN_IDENTITY
-          echo "🔍 Extracting code signing identity from keychain..."
-          CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | grep -o '".*"' | head -n 1 | tr -d '"')
-          echo "✅ CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
-          if [ -z "$CODE_SIGN_IDENTITY" ]; then
-          echo "❌ Failed to extract CODE_SIGN_IDENTITY"
-          exit 1
-          fi
-          
-          # Download provisioning profile
-          echo "📥 Downloading provisioning profile..."
-          curl -o profile.mobileprovision "$PROFILE_URL"
-          
-          # Extract UUID of the provisioning profile
-          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
-          echo "✅ Provisioning Profile UUID: $UUID"
-          
-          PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp profile.mobileprovision "$PROFILE_PATH"
-          
-          # Update iOS deployment target
-          echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
-          sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
-          
-          # CocoaPods setup
-          echo "🛠️ Setting up CocoaPods and Flutter dependencies..."
-          flutter clean
-          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
-          
-          set -x
-          gem install cocoapods --pre --silent
-          gem install securerandom -v 0.3.2 --silent
-          pod install --project-directory=ios
-          flutter pub get
-          set +x
-          
-          # Build Flutter iOS app (no code signing)
-          flutter build ios --release --no-codesign
-          
-          # Archive app with manual signing
-          echo "📦 Archiving app with code signing..."
-          xcodebuild -workspace ios/Runner.xcworkspace \
-          -scheme Runner \
-          -configuration Release \
-          -sdk iphoneos \
-          -destination "generic/platform=iOS" \
-          -archivePath build/ios/archive/Runner.xcarchive \
-          CODE_SIGN_STYLE=Manual \
-          DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-          PROVISIONING_PROFILE_SPECIFIER="$UUID" \
-          PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-          CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-          OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
-          archive
-          
-          # Create ExportOptions.plist
-          cat <<EOF > ExportOptions.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-          "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-          <key>method</key>
-          <string>ad-hoc</string>
-          <key>provisioningProfiles</key>
-          <dict>
-          <key>$BUNDLE_ID</key>
-          <string>$UUID</string>
-          </dict>
-          <key>signingStyle</key>
-          <string>manual</string>
-          <key>teamID</key>
-          <string>$APPLE_TEAM_ID</string>
-          </dict>
-          </plist>
-          EOF
-          
-          # Export IPA
-          echo "📦 Exporting IPA..."
-          xcodebuild -exportArchive \
-          -archivePath build/ios/archive/Runner.xcarchive \
-          -exportPath build/ios/ipa \
-          -exportOptionsPlist ExportOptions.plist
-        
-          echo "✅ IPA export complete: build/ios/ipa"
-        
-          # Cleanup
-          echo "🧹 Cleaning up..."
-          security delete-keychain "$KEYCHAIN_NAME"
-          rm -f signing_cert.p12 profile.mobileprovision ExportOptions.plist
-          
-          echo "🎉 Done!"
+        echo "🔐 Setting up iOS code signing..."
+
+        export LC_ALL=en_US.UTF-8
+        export LANG=en_US.UTF-8
+
+        KEYCHAIN_PASSWORD="temp_key_pass"
+        KEYCHAIN_NAME="ios-signing.keychain"
+
+        # Download and import certificate
+        echo "📥 Downloading certificate..."
+        curl -o signing_cert.p12 "$CERT_URL"
+
+        echo "🔐 Creating temporary keychain..."
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+        security default-keychain -s "$KEYCHAIN_NAME"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+        security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
+
+        # Import the certificate to the keychain
+        echo "🔑 Importing certificate..."
+        security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+
+        # Trust the keychain for signing tools
+        echo "✅ Trusting keychain for code signing..."
+        security list-keychains -s "$KEYCHAIN_NAME"
+        security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+        # Extract CODE_SIGN_IDENTITY
+        echo "🔍 Extracting code signing identity from keychain..."
+        CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | grep -o '".*"' | head -n 1 | tr -d '"')
+        echo "✅ CODE_SIGN_IDENTITY: $CODE_SIGN_IDENTITY"
+        if [ -z "$CODE_SIGN_IDENTITY" ]; then
+        echo "❌ Failed to extract CODE_SIGN_IDENTITY"
+        exit 1
+        fi
+
+        # Download provisioning profile
+        echo "📥 Downloading provisioning profile..."
+        curl -o profile.mobileprovision "$PROFILE_URL"
+
+        # Extract UUID of the provisioning profile
+        UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
+        echo "✅ Provisioning Profile UUID: $UUID"
+
+        PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp profile.mobileprovision "$PROFILE_PATH"
+
+        # Update iOS deployment target
+        echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
+        sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
+
+        # CocoaPods setup
+        echo "🛠️ Setting up CocoaPods and Flutter dependencies..."
+        flutter clean
+        rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
+
+        set -x
+        gem install cocoapods --pre --silent
+        gem install securerandom -v 0.3.2 --silent
+        pod install --project-directory=ios
+        flutter pub get
+        set +x
+
+        # Build Flutter iOS app (no code signing)
+        flutter build ios --release --no-codesign
+
+        # Archive app with manual signing
+        echo "📦 Archiving app with code signing..."
+        xcodebuild -workspace ios/Runner.xcworkspace \
+        -scheme Runner \
+        -configuration Release \
+        -sdk iphoneos \
+        -destination "generic/platform=iOS" \
+        -archivePath build/ios/archive/Runner.xcarchive \
+        CODE_SIGN_STYLE=Manual \
+        DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+        PROVISIONING_PROFILE_SPECIFIER="$UUID" \
+        PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+        CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+        OTHER_CODE_SIGN_FLAGS="--keychain ~/Library/Keychains/$KEYCHAIN_NAME-db" \
+        archive
+
+        # Create ExportOptions.plist
+        cat <<EOF > ExportOptions.plist
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+        "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+        <key>method</key>
+        <string>ad-hoc</string>
+        <key>provisioningProfiles</key>
+        <dict>
+        <key>$BUNDLE_ID</key>
+        <string>$UUID</string>
+        </dict>
+        <key>signingStyle</key>
+        <string>manual</string>
+        <key>teamID</key>
+        <string>$APPLE_TEAM_ID</string>
+        </dict>
+        </plist>
+        EOF
+
+        # Export IPA
+        echo "📦 Exporting IPA..."
+        xcodebuild -exportArchive \
+        -archivePath build/ios/archive/Runner.xcarchive \
+        -exportPath build/ios/ipa \
+        -exportOptionsPlist ExportOptions.plist
+
+        echo "✅ IPA export complete: build/ios/ipa"
+
+        # Cleanup
+        echo "🧹 Cleaning up..."
+        security delete-keychain "$KEYCHAIN_NAME"
+        rm -f signing_cert.p12 profile.mobileprovision ExportOptions.plist
+
+        echo "🎉 Done!"
 
     - &setup_ios_signing_manual
       name: Setting Up iOS Signing (Manual)
@@ -1077,49 +1060,49 @@ definitions:
         echo "🔐 Setting up iOS code signing..."
         export LC_ALL=en_US.UTF-8
         export LANG=en_US.UTF-8
-    
+
         KEYCHAIN_PASSWORD="temp_key_pass"
         KEYCHAIN_NAME="ios-signing.keychain"
-    
+
         # Download and import certificate
         echo "📥 Downloading certificate..."
         curl -o signing_cert.p12 "$CERT_URL"
-        
+
         echo "🔐 Creating temporary keychain..."
         security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
         security default-keychain -s "$KEYCHAIN_NAME"
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
         security set-keychain-settings -t 3600 -u "$KEYCHAIN_NAME"
-        
+
         # Import the certificate to the keychain
         echo "🔑 Importing certificate..."
         security import signing_cert.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-    
+
         echo "🔍 Verifying imported certificate..."
         security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-        
+
         # Download provisioning profile
         echo "📥 Downloading provisioning profile..."
         curl -o profile.mobileprovision "$PROFILE_URL"
-    
+
         # Get the UUID of the provisioning profile
         UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
         echo "✅ Profile UUID: $UUID"
-    
+
         PROFILE_PATH=~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp profile.mobileprovision "$PROFILE_PATH"
-    
+
         # Set the keychain to be trusted for code signing
         echo "✅ Trusting keychain for code signing..."
         security list-keychains -s "$KEYCHAIN_NAME"
         security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
         security find-identity -v -p codesigning
-        
+
         echo "🔧 Updating iOS deployment target to 13.0 in Podfile..."
         sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
         cat ios/Podfile | grep platform
-      
+
           # Flutter build
           echo "⚙️ Building Flutter iOS project..."
           flutter build ios --release --no-codesign \
@@ -1196,7 +1179,7 @@ definitions:
             PROVISIONING_PROFILE_SPECIFIER="$UUID" \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY"
-        
+
             # ExportOptions.plist
             cat <<EOF > ExportOptions.plist
             <?xml version="1.0" encoding="UTF-8"?>
@@ -1218,184 +1201,183 @@ definitions:
             </dict>
             </plist>
             EOF
-        
+
             # Export the IPA
             echo "📦 Exporting IPA..."
             xcodebuild -exportArchive \
             -archivePath build/ios/archive/Runner.xcarchive \
             -exportPath build/ios/ipa \
             -exportOptionsPlist ExportOptions.plist
-        
+
             echo "✅ IPA export complete: build/ios/ipa"
             security delete-keychain "$KEYCHAIN_NAME"
             rm signing_cert.p12 profile.mobileprovision
-            
 
-#  --------------------------------------------
-#        echo "🔐 Setting up iOS signing (manual)..."
-#
-#            mkdir -p ios_certificates
-#
-#            echo "⬇️ Downloading .p12 certificate..."
-#            if [ -z "$CERT_URL" ]; then
-#            echo "❌ CERT_URL is not set."
-#            exit 1
-#            fi
-#            curl -f -o ios_certificates/certificate.p12 "$CERT_URL"
-#            echo "✅ .p12 certificate downloaded successfully."
-#
-#            echo "⬇️ Downloading provisioning profile..."
-#            if [ -z "$PROFILE_URL" ]; then
-#            echo "❌ PROFILE_URL is not set."
-#            exit 1
-#            fi
-#            curl -f -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
-#            echo "✅ Provisioning profile downloaded successfully."
-#
-#            echo "🔐 Creating and unlocking custom keychain..."
-#            security create-keychain -p "" build.keychain
-#            security default-keychain -s build.keychain
-#            security unlock-keychain -p "" build.keychain
-#            security set-keychain-settings -lut 21600 build.keychain
-#
-#            echo "🔐 Importing certificate into custom keychain..."
-#            security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -A -T /usr/bin/codesign -T /usr/bin/security
-#            security set-key-partition-list -S apple-tool:,apple:,codesign -s -k "" build.keychain
-#            security list-keychains -d user -s build.keychain
-#            echo "✅ Certificate imported and trusted for code signing."
-#
-#            echo "📋 Extracting UUID and Name from provisioning profile..."
-#            security cms -D -i ios_certificates/profile.mobileprovision -o ios_certificates/profile.plist
-#
-#         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" ios_certificates/profile.plist)
-#         PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" ios_certificates/profile.plist)
-#
-#         if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
-#            echo "❌ Failed to extract UUID or Name from provisioning profile."
-#            exit 1
-#         fi
-#
-#          echo "✅ Profile UUID: $PROFILE_UUID"
-#          echo "✅ Profile Name: $PROFILE_NAME"
-#
-#          echo "🔍 Validating provisioning profile matches app bundle ID..."
-#          PROFILE_APP_ID_PREFIX=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" ios_certificates/profile.plist)
-#          EXPECTED_APP_ID="$APPLE_TEAM_ID.$PKG_NAME"
-#
-#          if [[ "$PROFILE_APP_ID_PREFIX" != "$EXPECTED_APP_ID" ]]; then
-#            echo "❌ Provisioning profile's App ID ($PROFILE_APP_ID_PREFIX) does not match expected ($EXPECTED_APP_ID)"
-#            exit 1
-#          else
-#            echo "✅ Provisioning profile matches expected bundle ID: $PKG_NAME"
-#          fi
-#
-#         echo "🔍 Verifying imported code signing identities..."
-#         VALID_IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "iPhone Distribution" | awk '{print $2}')
-#         if [ -z "$VALID_IDENTITY" ]; then
-#              echo "❌ No valid iPhone Distribution certificate found in the keychain."
-#              exit 1
-#         else
-#              echo "✅ Found valid iPhone Distribution certificate: $VALID_IDENTITY"
-#         fi
-#
-#        echo "📝 Creating ExportOptions.plist..."
-#        cat > ExportOptions.plist <<EOF
-#        <?xml version="1.0" encoding="UTF-8"?>
-#        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-#        <plist version="1.0">
-#        <dict>
-#        <key>method</key>
-#        <string>ad-hoc</string>
-#        <key>signingStyle</key>
-#        <string>manual</string>
-#        <key>provisioningProfiles</key>
-#        <dict>
-#        <key>$PKG_NAME</key>
-#        <string>$PROFILE_NAME</string>
-#        </dict>
-#        <key>teamID</key>
-#        <string>$APPLE_TEAM_ID</string>
-#        </dict>
-#        </plist>
-#        EOF
-#        echo "✅ ExportOptions.plist created."
-#
-#        echo "🔑 Setting up provisioning profile for build..."
-#        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-#        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-#
-#        # ⚠️ Keychain visibility fix
-#        KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
-#         security list-keychains -d user -s "$KEYCHAIN_PATH"
-#         security default-keychain -s "$KEYCHAIN_PATH"
-#
-#         # Optional debug output
-#         echo "🔍 Active signing identities:"
-#         security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-#
-#         echo "✅ Building iOS IPA..."
-#          flutter build ipa \
-#                --release \
-#                --dart-define=WEB_URL="$WEB_URL" \
-#                --dart-define=PUSH_NOTIFY="$PUSH_NOTIFY" \
-#                --dart-define=PKG_NAME="$PKG_NAME" \
-#                --dart-define=APP_NAME="$APP_NAME" \
-#                --dart-define=ORG_NAME="$ORG_NAME" \
-#                --dart-define=VERSION_NAME="$VERSION_NAME" \
-#                --dart-define=VERSION_CODE="$VERSION_CODE" \
-#                --dart-define=EMAIL_ID="$EMAIL_ID" \
-#                --dart-define=IS_SPLASH="$IS_SPLASH" \
-#                --dart-define=SPLASH="$SPLASH" \
-#                --dart-define=SPLASH_BG="$SPLASH_BG" \
-#                --dart-define=SPLASH_ANIMATION="$SPLASH_ANIMATION" \
-#                --dart-define=SPLASH_BG_COLOR="$SPLASH_BG_COLOR" \
-#                --dart-define=SPLASH_TAGLINE="$SPLASH_TAGLINE" \
-#                --dart-define=SPLASH_TAGLINE_COLOR="$SPLASH_TAGLINE_COLOR" \
-#                --dart-define=SPLASH_DURATION="$SPLASH_DURATION" \
-#                --dart-define=IS_PULLDOWN="$IS_PULLDOWN" \
-#                --dart-define=LOGO_URL="$LOGO_URL" \
-#                --dart-define=IS_BOTTOMMENU="$IS_BOTTOMMENU" \
-#                --dart-define=BOTTOMMENU_ITEMS="$BOTTOMMENU_ITEMS" \
-#                --dart-define=BOTTOMMENU_BG_COLOR="$BOTTOMMENU_BG_COLOR" \
-#                --dart-define=BOTTOMMENU_ICON_COLOR="$BOTTOMMENU_ICON_COLOR" \
-#                --dart-define=BOTTOMMENU_TEXT_COLOR="$BOTTOMMENU_TEXT_COLOR" \
-#                --dart-define=BOTTOMMENU_ACTIVE_TAB_COLOR="$BOTTOMMENU_ACTIVE_TAB_COLOR" \
-#                --dart-define=BOTTOMMENU_ICON_POSITION="$BOTTOMMENU_ICON_POSITION" \
-#                --dart-define=BOTTOMMENU_VISIBLE_ON="$BOTTOMMENU_VISIBLE_ON" \
-#                --dart-define=IS_DEEPLINK="$IS_DEEPLINK" \
-#                --dart-define=IS_LOAD_IND="$IS_LOAD_IND" \
-#                --dart-define=IS_CAMERA="$IS_CAMERA" \
-#                --dart-define=IS_LOCATION="$IS_LOCATION" \
-#                --dart-define=IS_BIOMETRIC="$IS_BIOMETRIC" \
-#                --dart-define=IS_MIC="$IS_MIC" \
-#                --dart-define=IS_CONTACT="$IS_CONTACT" \
-#                --dart-define=IS_CALENDAR="$IS_CALENDAR" \
-#                --dart-define=IS_NOTIFICATION="$IS_NOTIFICATION" \
-#                --dart-define=IS_STORAGE="$IS_STORAGE" \
-#                --dart-define=APNS_KEY_ID="$APNS_KEY_ID" \
-#                --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID" \
-#                --dart-define=APNS_AUTH_KEY_URL="$APNS_AUTH_KEY_URL" \
-#                --dart-define=KEY_STORE="$KEY_STORE" \
-#                --dart-define=CM_KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD" \
-#                --dart-define=CM_KEY_ALIAS="$CM_KEY_ALIAS" \
-#                --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD" \
-#                --export-options-plist=ExportOptions.plist > flutter_build_ios.log
-#
-#          echo "✅ IPA build completed."
-#
-#          echo "🧹 Cleaning up certificates and profiles..."
-#          security delete-keychain build.keychain
-#           rm -rf ios_certificates
-#           rm -f ExportOptions.plist
-#          echo "✅ Cleanup completed."
+    #  --------------------------------------------
+    #        echo "🔐 Setting up iOS signing (manual)..."
+    #
+    #            mkdir -p ios_certificates
+    #
+    #            echo "⬇️ Downloading .p12 certificate..."
+    #            if [ -z "$CERT_URL" ]; then
+    #            echo "❌ CERT_URL is not set."
+    #            exit 1
+    #            fi
+    #            curl -f -o ios_certificates/certificate.p12 "$CERT_URL"
+    #            echo "✅ .p12 certificate downloaded successfully."
+    #
+    #            echo "⬇️ Downloading provisioning profile..."
+    #            if [ -z "$PROFILE_URL" ]; then
+    #            echo "❌ PROFILE_URL is not set."
+    #            exit 1
+    #            fi
+    #            curl -f -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
+    #            echo "✅ Provisioning profile downloaded successfully."
+    #
+    #            echo "🔐 Creating and unlocking custom keychain..."
+    #            security create-keychain -p "" build.keychain
+    #            security default-keychain -s build.keychain
+    #            security unlock-keychain -p "" build.keychain
+    #            security set-keychain-settings -lut 21600 build.keychain
+    #
+    #            echo "🔐 Importing certificate into custom keychain..."
+    #            security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -A -T /usr/bin/codesign -T /usr/bin/security
+    #            security set-key-partition-list -S apple-tool:,apple:,codesign -s -k "" build.keychain
+    #            security list-keychains -d user -s build.keychain
+    #            echo "✅ Certificate imported and trusted for code signing."
+    #
+    #            echo "📋 Extracting UUID and Name from provisioning profile..."
+    #            security cms -D -i ios_certificates/profile.mobileprovision -o ios_certificates/profile.plist
+    #
+    #         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" ios_certificates/profile.plist)
+    #         PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" ios_certificates/profile.plist)
+    #
+    #         if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+    #            echo "❌ Failed to extract UUID or Name from provisioning profile."
+    #            exit 1
+    #         fi
+    #
+    #          echo "✅ Profile UUID: $PROFILE_UUID"
+    #          echo "✅ Profile Name: $PROFILE_NAME"
+    #
+    #          echo "🔍 Validating provisioning profile matches app bundle ID..."
+    #          PROFILE_APP_ID_PREFIX=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" ios_certificates/profile.plist)
+    #          EXPECTED_APP_ID="$APPLE_TEAM_ID.$PKG_NAME"
+    #
+    #          if [[ "$PROFILE_APP_ID_PREFIX" != "$EXPECTED_APP_ID" ]]; then
+    #            echo "❌ Provisioning profile's App ID ($PROFILE_APP_ID_PREFIX) does not match expected ($EXPECTED_APP_ID)"
+    #            exit 1
+    #          else
+    #            echo "✅ Provisioning profile matches expected bundle ID: $PKG_NAME"
+    #          fi
+    #
+    #         echo "🔍 Verifying imported code signing identities..."
+    #         VALID_IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "iPhone Distribution" | awk '{print $2}')
+    #         if [ -z "$VALID_IDENTITY" ]; then
+    #              echo "❌ No valid iPhone Distribution certificate found in the keychain."
+    #              exit 1
+    #         else
+    #              echo "✅ Found valid iPhone Distribution certificate: $VALID_IDENTITY"
+    #         fi
+    #
+    #        echo "📝 Creating ExportOptions.plist..."
+    #        cat > ExportOptions.plist <<EOF
+    #        <?xml version="1.0" encoding="UTF-8"?>
+    #        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    #        <plist version="1.0">
+    #        <dict>
+    #        <key>method</key>
+    #        <string>ad-hoc</string>
+    #        <key>signingStyle</key>
+    #        <string>manual</string>
+    #        <key>provisioningProfiles</key>
+    #        <dict>
+    #        <key>$PKG_NAME</key>
+    #        <string>$PROFILE_NAME</string>
+    #        </dict>
+    #        <key>teamID</key>
+    #        <string>$APPLE_TEAM_ID</string>
+    #        </dict>
+    #        </plist>
+    #        EOF
+    #        echo "✅ ExportOptions.plist created."
+    #
+    #        echo "🔑 Setting up provisioning profile for build..."
+    #        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+    #        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+    #
+    #        # ⚠️ Keychain visibility fix
+    #        KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
+    #         security list-keychains -d user -s "$KEYCHAIN_PATH"
+    #         security default-keychain -s "$KEYCHAIN_PATH"
+    #
+    #         # Optional debug output
+    #         echo "🔍 Active signing identities:"
+    #         security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+    #
+    #         echo "✅ Building iOS IPA..."
+    #          flutter build ipa \
+    #                --release \
+    #                --dart-define=WEB_URL="$WEB_URL" \
+    #                --dart-define=PUSH_NOTIFY="$PUSH_NOTIFY" \
+    #                --dart-define=PKG_NAME="$PKG_NAME" \
+    #                --dart-define=APP_NAME="$APP_NAME" \
+    #                --dart-define=ORG_NAME="$ORG_NAME" \
+    #                --dart-define=VERSION_NAME="$VERSION_NAME" \
+    #                --dart-define=VERSION_CODE="$VERSION_CODE" \
+    #                --dart-define=EMAIL_ID="$EMAIL_ID" \
+    #                --dart-define=IS_SPLASH="$IS_SPLASH" \
+    #                --dart-define=SPLASH="$SPLASH" \
+    #                --dart-define=SPLASH_BG="$SPLASH_BG" \
+    #                --dart-define=SPLASH_ANIMATION="$SPLASH_ANIMATION" \
+    #                --dart-define=SPLASH_BG_COLOR="$SPLASH_BG_COLOR" \
+    #                --dart-define=SPLASH_TAGLINE="$SPLASH_TAGLINE" \
+    #                --dart-define=SPLASH_TAGLINE_COLOR="$SPLASH_TAGLINE_COLOR" \
+    #                --dart-define=SPLASH_DURATION="$SPLASH_DURATION" \
+    #                --dart-define=IS_PULLDOWN="$IS_PULLDOWN" \
+    #                --dart-define=LOGO_URL="$LOGO_URL" \
+    #                --dart-define=IS_BOTTOMMENU="$IS_BOTTOMMENU" \
+    #                --dart-define=BOTTOMMENU_ITEMS="$BOTTOMMENU_ITEMS" \
+    #                --dart-define=BOTTOMMENU_BG_COLOR="$BOTTOMMENU_BG_COLOR" \
+    #                --dart-define=BOTTOMMENU_ICON_COLOR="$BOTTOMMENU_ICON_COLOR" \
+    #                --dart-define=BOTTOMMENU_TEXT_COLOR="$BOTTOMMENU_TEXT_COLOR" \
+    #                --dart-define=BOTTOMMENU_ACTIVE_TAB_COLOR="$BOTTOMMENU_ACTIVE_TAB_COLOR" \
+    #                --dart-define=BOTTOMMENU_ICON_POSITION="$BOTTOMMENU_ICON_POSITION" \
+    #                --dart-define=BOTTOMMENU_VISIBLE_ON="$BOTTOMMENU_VISIBLE_ON" \
+    #                --dart-define=IS_DEEPLINK="$IS_DEEPLINK" \
+    #                --dart-define=IS_LOAD_IND="$IS_LOAD_IND" \
+    #                --dart-define=IS_CAMERA="$IS_CAMERA" \
+    #                --dart-define=IS_LOCATION="$IS_LOCATION" \
+    #                --dart-define=IS_BIOMETRIC="$IS_BIOMETRIC" \
+    #                --dart-define=IS_MIC="$IS_MIC" \
+    #                --dart-define=IS_CONTACT="$IS_CONTACT" \
+    #                --dart-define=IS_CALENDAR="$IS_CALENDAR" \
+    #                --dart-define=IS_NOTIFICATION="$IS_NOTIFICATION" \
+    #                --dart-define=IS_STORAGE="$IS_STORAGE" \
+    #                --dart-define=APNS_KEY_ID="$APNS_KEY_ID" \
+    #                --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID" \
+    #                --dart-define=APNS_AUTH_KEY_URL="$APNS_AUTH_KEY_URL" \
+    #                --dart-define=KEY_STORE="$KEY_STORE" \
+    #                --dart-define=CM_KEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD" \
+    #                --dart-define=CM_KEY_ALIAS="$CM_KEY_ALIAS" \
+    #                --dart-define=CM_KEY_PASSWORD="$CM_KEY_PASSWORD" \
+    #                --export-options-plist=ExportOptions.plist > flutter_build_ios.log
+    #
+    #          echo "✅ IPA build completed."
+    #
+    #          echo "🧹 Cleaning up certificates and profiles..."
+    #          security delete-keychain build.keychain
+    #           rm -rf ios_certificates
+    #           rm -f ExportOptions.plist
+    #          echo "✅ Cleanup completed."
 
     - &setup_ios_signing_manual3
       name: Setting Up iOS Signing (Manual)
       script: |
         echo "🔐 Setting up iOS signing (manual)..."
-  
+
         mkdir -p ios_certificates
-        
+
         echo "⬇️ Downloading .p12 certificate..."
         if [ -z "$CERT_URL" ]; then
         echo "❌ CERT_URL is not set."
@@ -1403,7 +1385,7 @@ definitions:
         fi
         curl -f -o ios_certificates/certificate.p12 "$CERT_URL"
         echo "✅ .p12 certificate downloaded successfully."
-        
+
         echo "⬇️ Downloading provisioning profile..."
         if [ -z "$PROFILE_URL" ]; then
         echo "❌ PROFILE_URL is not set."
@@ -1411,51 +1393,51 @@ definitions:
         fi
         curl -f -o ios_certificates/profile.mobileprovision "$PROFILE_URL"
         echo "✅ Provisioning profile downloaded successfully."
-        
+
         echo "🔐 Creating and unlocking custom keychain..."
         security create-keychain -p "" build.keychain
         security default-keychain -s build.keychain
         security unlock-keychain -p "" build.keychain
         security set-keychain-settings -lut 21600 build.keychain
-        
+
         echo "🔐 Importing certificate into custom keychain..."
         security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -A -T /usr/bin/codesign -T /usr/bin/security
         security set-key-partition-list -S apple-tool:,apple:,codesign -s -k "" build.keychain
         security list-keychains -s build.keychain
         echo "✅ Certificate imported and trusted for code signing."
-        
+
         echo "📋 Extracting UUID and Name from provisioning profile..."
         security cms -D -i ios_certificates/profile.mobileprovision -o ios_certificates/profile.plist
-        
+
         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" ios_certificates/profile.plist)
         PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" ios_certificates/profile.plist)
-        
+
         if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
         echo "❌ Failed to extract UUID or Name from provisioning profile."
         exit 1
         fi
-      
+
         echo "✅ Profile UUID: $PROFILE_UUID"
         echo "✅ Profile Name: $PROFILE_NAME"
-        
+
         echo "🔍 Validating provisioning profile matches app bundle ID..."
-  
+
         PROFILE_APP_ID_PREFIX=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" ios_certificates/profile.plist)
         EXPECTED_APP_ID="$APPLE_TEAM_ID.$PKG_NAME"
-        
+
         if [[ "$PROFILE_APP_ID_PREFIX" != "$EXPECTED_APP_ID" ]]; then
         echo "❌ Provisioning profile's App ID ($PROFILE_APP_ID_PREFIX) does not match expected ($EXPECTED_APP_ID)"
         exit 1
         else
         echo "✅ Provisioning profile matches expected bundle ID: $PKG_NAME"
         fi
-        
+
         echo "🔍 Verifying imported code signing identities..."
         security find-identity -v -p codesigning build.keychain
-        
+
         # Match iPhone Distribution instead of Apple Distribution
         VALID_IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "iPhone Distribution" | awk '{print $2}')
-        
+
         if [ -z "$VALID_IDENTITY" ]; then
         echo "❌ No valid iPhone Distribution certificate found in the keychain."
         exit 1
@@ -1486,103 +1468,101 @@ definitions:
           
           echo "✅ ExportOptions.plist created."
 
-#        # Step 4: Clean previous keychains
-#        echo "🧹 Cleaning previous keychains..."
-#        security delete-keychain build.keychain 2>/dev/null || true
-#
-#        # Step 5: Create and configure the build keychain
-#        echo "🔑 Importing certificate into dedicated keychain..."
-#        security create-keychain -p "" build.keychain
-#        security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
-#        echo "🔑 Ensuring the certificate is accessible for code signing..."
-#        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-#        echo "🔓 Unlocking the keychain..."
-#        security unlock-keychain -p "" build.keychain
-#        echo "🔧 Setting keychain settings..."
-#        security list-keychains -s build.keychain
-#        security default-keychain -s build.keychain
-#
-#        # Step 6: Verify the certificate
-#        echo "🔧 Verifying certificate in keychain..."
-#        security find-identity -p codesigning -v build.keychain
-#        VALID_IDENTITY_COUNT=$(security find-identity -p codesigning build.keychain | grep -cE 'iPhone (Developer|Distribution):')
-#        if [ "$VALID_IDENTITY_COUNT" -lt 1 ]; then
-#          echo "❌ No valid iOS code signing identity found in build.keychain."
-#          exit 1
-#        fi
-#
-#        # Step 7: Extract UUID and Name from the provisioning profile
-#        echo "🔍 Extracting UUID and Name from the provisioning profile..."
-#        TEMP_PLIST="/tmp/profile.plist"
-#        security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
-#        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
-#        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
-#
-#        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
-#          echo "❌ Failed to extract UUID or Name from provisioning profile."
-#          exit 1
-#        fi
-#
-#        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-#        echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
-#
-#        echo "Team ID: $APPLE_TEAM_ID"
-#        echo "Bundle ID: $BUNDLE_ID"
-#        echo "PROFILE_NAME: $PROFILE_NAME"
-#        echo "PROFILE_UUID: $PROFILE_UUID"
-#
-#        # Step 8: Creating ExportOptions.plist
-#        echo "📝 Creating ExportOptions.plist..."
-#        cat > ExportOptions.plist <<EOF
-#        <?xml version="1.0" encoding="UTF-8"?>
-#        <plist version="1.0">
-#        <dict>
-#          <key>method</key>
-#          <string>${EXPORT_METHOD:-app-store}</string>
-#          <key>signingStyle</key>
-#          <string>manual</string>
-#          <key>provisioningProfiles</key>
-#          <dict>
-#            <key>$BUNDLE_ID</key>
-#            <string>$PROFILE_NAME</string>
-#          </dict>
-#          <key>teamID</key>
-#          <string>$APPLE_TEAM_ID</string>
-#          <key>signingCertificate</key>
-#          <string>iPhone Distribution</string>
-#          <key>compileBitcode</key>
-#          <false/>
-#          <key>stripSwiftSymbols</key>
-#          <true/>
-#          <key>thinning</key>
-#          <string>&lt;none&gt;</string>
-#        </dict>
-#        </plist>
-#        EOF
-#
-#        # Step 9: Build the iOS IPA
-#        echo "✅ Building iOS IPA..."
-#        flutter build ipa \
-#          --release \
-#          --export-options-plist=ExportOptions.plist > flutter_build_ios.log
-#        if [ $? -ne 0 ]; then
-#          echo "❌ IPA build failed"
-#          cat flutter_build_ios.log
-#          exit 1
-#        fi
-#
-#        echo "✅ IPA build completed successfully"
-#
-#        # Cleanup
-#        echo "🧹 Cleaning up certificates and profiles..."
-#        rm -rf ios_certificates
-#        rm -f ExportOptions.plist
-#        security delete-keychain build.keychain
-#
-#        echo "✅ Cleanup completed."
-#
-
-       
+    #        # Step 4: Clean previous keychains
+    #        echo "🧹 Cleaning previous keychains..."
+    #        security delete-keychain build.keychain 2>/dev/null || true
+    #
+    #        # Step 5: Create and configure the build keychain
+    #        echo "🔑 Importing certificate into dedicated keychain..."
+    #        security create-keychain -p "" build.keychain
+    #        security import ios_certificates/certificate.p12 -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
+    #        echo "🔑 Ensuring the certificate is accessible for code signing..."
+    #        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+    #        echo "🔓 Unlocking the keychain..."
+    #        security unlock-keychain -p "" build.keychain
+    #        echo "🔧 Setting keychain settings..."
+    #        security list-keychains -s build.keychain
+    #        security default-keychain -s build.keychain
+    #
+    #        # Step 6: Verify the certificate
+    #        echo "🔧 Verifying certificate in keychain..."
+    #        security find-identity -p codesigning -v build.keychain
+    #        VALID_IDENTITY_COUNT=$(security find-identity -p codesigning build.keychain | grep -cE 'iPhone (Developer|Distribution):')
+    #        if [ "$VALID_IDENTITY_COUNT" -lt 1 ]; then
+    #          echo "❌ No valid iOS code signing identity found in build.keychain."
+    #          exit 1
+    #        fi
+    #
+    #        # Step 7: Extract UUID and Name from the provisioning profile
+    #        echo "🔍 Extracting UUID and Name from the provisioning profile..."
+    #        TEMP_PLIST="/tmp/profile.plist"
+    #        security cms -D -i ios_certificates/profile.mobileprovision > "$TEMP_PLIST"
+    #        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$TEMP_PLIST")
+    #        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$TEMP_PLIST")
+    #
+    #        if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+    #          echo "❌ Failed to extract UUID or Name from provisioning profile."
+    #          exit 1
+    #        fi
+    #
+    #        cp ios_certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+    #        echo "✅ Provisioning profile installed as $PROFILE_UUID.mobileprovision"
+    #
+    #        echo "Team ID: $APPLE_TEAM_ID"
+    #        echo "Bundle ID: $BUNDLE_ID"
+    #        echo "PROFILE_NAME: $PROFILE_NAME"
+    #        echo "PROFILE_UUID: $PROFILE_UUID"
+    #
+    #        # Step 8: Creating ExportOptions.plist
+    #        echo "📝 Creating ExportOptions.plist..."
+    #        cat > ExportOptions.plist <<EOF
+    #        <?xml version="1.0" encoding="UTF-8"?>
+    #        <plist version="1.0">
+    #        <dict>
+    #          <key>method</key>
+    #          <string>${EXPORT_METHOD:-app-store}</string>
+    #          <key>signingStyle</key>
+    #          <string>manual</string>
+    #          <key>provisioningProfiles</key>
+    #          <dict>
+    #            <key>$BUNDLE_ID</key>
+    #            <string>$PROFILE_NAME</string>
+    #          </dict>
+    #          <key>teamID</key>
+    #          <string>$APPLE_TEAM_ID</string>
+    #          <key>signingCertificate</key>
+    #          <string>iPhone Distribution</string>
+    #          <key>compileBitcode</key>
+    #          <false/>
+    #          <key>stripSwiftSymbols</key>
+    #          <true/>
+    #          <key>thinning</key>
+    #          <string>&lt;none&gt;</string>
+    #        </dict>
+    #        </plist>
+    #        EOF
+    #
+    #        # Step 9: Build the iOS IPA
+    #        echo "✅ Building iOS IPA..."
+    #        flutter build ipa \
+    #          --release \
+    #          --export-options-plist=ExportOptions.plist > flutter_build_ios.log
+    #        if [ $? -ne 0 ]; then
+    #          echo "❌ IPA build failed"
+    #          cat flutter_build_ios.log
+    #          exit 1
+    #        fi
+    #
+    #        echo "✅ IPA build completed successfully"
+    #
+    #        # Cleanup
+    #        echo "🧹 Cleaning up certificates and profiles..."
+    #        rm -rf ios_certificates
+    #        rm -f ExportOptions.plist
+    #        security delete-keychain build.keychain
+    #
+    #        echo "✅ Cleanup completed."
+    #
 
     - &Inject_iOS_Firebase_Push
       name: Setup iOS Firebase push notifications and APNs key
@@ -1627,17 +1607,16 @@ definitions:
           echo "⚠️ Missing APNs credentials, skipping .p8 key setup"
         fi
 
-
     - &Update_App_Version
       name: Update Version Info (Android & iOS)
       script: |
         # Generate dynamic version code using timestamp (or set default)
         VERSION_NAME="${VERSION_NAME:-1.0.0}"
         VERSION_CODE="${VERSION_CODE:-$(date +%Y%m%d%H%M)}" # Dynamic version code
-        
+
         echo "🔢 VERSION_NAME: $VERSION_NAME"
         echo "🔢 VERSION_CODE: $VERSION_CODE"
-        
+
         # ───── Update version in pubspec.yaml ─────
         echo "🔧 Updating pubspec.yaml..."
         if grep -q "^version: " pubspec.yaml; then
@@ -1646,13 +1625,13 @@ definitions:
           echo "version: ${VERSION_NAME}+${VERSION_CODE}" >> pubspec.yaml
         fi
         echo "✅ pubspec.yaml version updated."
-        
+
         # ───── Update version in Android build.gradle ─────
         echo "🔧 Updating Android version in build.gradle..."
         sed -i'' -e "s/versionCode [0-9]\+/versionCode ${VERSION_CODE}/" android/app/build.gradle
         sed -i'' -e "s/versionName \".*\"/versionName \"${VERSION_NAME}\"/" android/app/build.gradle
         echo "✅ Android version updated in build.gradle."
-        
+
         # ───── Update version in iOS project.pbxproj ─────
         IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
         if [ -f "$IOS_PROJECT_FILE" ]; then
@@ -1682,14 +1661,14 @@ workflows:
       - *get_logo
       - *set_launcher_icons
       - *get_splash
-#      - *key_store
+      #      - *key_store
       - *Update_App_Version
       - *build_apk
     artifacts:
       - *android_apk
-#      - *android_abb
+      #      - *android_abb
       - flutter_build_apk.log
-#      - flutter_build_aab.log
+    #      - flutter_build_aab.log
     publishing: *email_release
 
   android-workflow:
@@ -1743,116 +1722,84 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      - *Setup_IOS
+      - name: Set up code signing
+        script: |
+          echo "🔐 Setting up iOS code signing..."
 
-        # 🧼 Clean and set minimum iOS deployment target
-#      - name: Update Podfile and Reinstall CocoaPods
-#        script: |
-#          echo "🛠️ Setting UTF-8 encoding for CocoaPods..."
-#          export LANG=en_US.UTF-8
-#          export LC_ALL=en_US.UTF-8
-#
-#          echo "💻 Shell in use: $SHELL"
-#          echo "🌍 Current language: $LANG"
-#
-#          # Clean up old Pod configurations and Flutter cache
-#          echo "🧹 Cleaning up CocoaPods and Flutter cache..."
-#          flutter clean
-#          rm -rf ios/Pods ios/Podfile.lock ~/Library/Caches/CocoaPods ~/.cocoapods/repos
-#
-#          # Update CocoaPods
-#          echo "🚀 Installing/Updating CocoaPods..."
-#          sudo gem install cocoapods
-#
-#          # Reinstall pods and update the repo
-#          echo "🔄 Reinstalling CocoaPods dependencies..."
-#          cd ios || exit
-#          pod reintegrate
-#          pod install --repo-update
-#          cd ..
-#
-#          # Final cleanup and dependency fetch
-#          echo "🔧 Final cleanup and fetching dependencies..."
-#          flutter clean
-#          xcodebuild clean
-#          flutter pub get
-#
-#          echo "✅ Pod update complete. CocoaPods version: $(pod --version)"
-       
-      
-#
-#        # 🧑‍💻 Setup automatic signing using App Store Connect API
-#      - name: Fetch signing files from App Store Connect
-#        script: |
-#            app-store-connect fetch-signing-files \
-#              "com.yourcompany.yourapp" \
-#              --type IOS_APP_STORE \
-#              --create
-#
-#        # Initialize keychain and add certificates
-#      - name: Initialize keychain and add certificates
-#        script: |
-#            keychain initialize
-#            keychain add-certificates
-#
-#        # 🏗️ Build the iOS app without signing
-#      - name: Build iOS app
-#        script: |
-#            flutter build ios --release --no-codesign
-#
-#        # 🧑‍💻 Optional: Build IPA and upload
-#      - name: Build IPA with xcodebuild
-#        script: |
-#            xcode-project build-ipa \
-#              --workspace ios/Runner.xcworkspace \
-#              --scheme Runner \
-#              --archive-flags="-allowProvisioningUpdates"
+          # Create keychain
+          KEYCHAIN_NAME="ios-build.keychain"
+          KEYCHAIN_PASSWORD="temporary"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
 
-#      - *build_ipa
+          # Import certificate
+          echo "📥 Importing certificate..."
+          security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          # Set up provisioning profile
+          echo "📱 Setting up provisioning profile..."
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          # Get profile UUID
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+          echo "✅ Profile UUID: $PROFILE_UUID"
+
+          # Move profile to correct location
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+
+      - name: iOS build
+        script: |
+          echo "🏗️ Building iOS app..."
+          cd ios
+          pod install
+          cd ..
+
+          # Build IPA
+          flutter build ipa \
+            --release \
+            --export-options-plist=ios/ExportOptions.plist
+            
+          # Clean up
+          security delete-keychain "$KEYCHAIN_NAME"
+          rm -f certificate.p12 profile.mobileprovision
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - flutter_build_ios.log
-
-#    code_signing:
-#        ios_signing:
-#          certificates:
-#            - certificate_path: ios_certificates/certificate.p12
-#              certificate_password: "$CERT_PASSWORD"
-#          provisioning_profiles:
-#            - bundle_identifier: "$PKG_NAME"
-#              path: ios_certificates/profile.mobileprovision
-
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
     publishing: *email_release
 
   ios-and-android-workflow:
-      name: ios and android workflow
-      max_build_duration: 30
-      instance_type: mac_mini_m1
-      environment:
-        flutter: stable
-      scripts:
-        #      - *pub_get
-        - *debug_env
-        - *change_app_name
-        - *Inject_Firebase_iOS_Push
-        - *Inject_Firebase
-        - *update_package_names
-        #      - *set_default_version
-        - *Update_App_Version
-        - *get_logo
-        - *set_launcher_icons
-        - *get_splash
-        - *Update_SDK_Version
-        - *build_apk
-        - *build_ipa
-      artifacts:
-        - *android_apk
-        - *android_abb
-        - *ios_app
-        - flutter_build.log
-        - flutter_build2.log
-        - fcm_token.txt
-      #        - *android_abb
-      publishing: *email_release
-
+    name: ios and android workflow
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+    scripts:
+      #      - *pub_get
+      - *debug_env
+      - *change_app_name
+      - *Inject_Firebase_iOS_Push
+      - *Inject_Firebase
+      - *update_package_names
+      #      - *set_default_version
+      - *Update_App_Version
+      - *get_logo
+      - *set_launcher_icons
+      - *get_splash
+      - *Update_SDK_Version
+      - *build_apk
+      - *build_ipa
+    artifacts:
+      - *android_apk
+      - *android_abb
+      - *ios_app
+      - flutter_build.log
+      - flutter_build2.log
+      - fcm_token.txt
+    #        - *android_abb
+    publishing: *email_release
