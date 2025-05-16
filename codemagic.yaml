@@ -1663,6 +1663,14 @@ workflows:
       - *get_splash
       #      - *key_store
       - *Update_App_Version
+      - name: Apply Fix for flutter_local_notifications Conflict
+        script: |
+          NOTIFICATIONS_FILE="$(find $FLUTTER_ROOT/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' | head -n 1)"
+          if [ -f "$NOTIFICATIONS_FILE" ]; then
+            echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
+            sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
+          else
+            echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
       - *build_apk
     artifacts:
       - *android_apk
@@ -1690,6 +1698,14 @@ workflows:
       - *get_splash
       - *Update_App_Version
       - *key_store
+      - name: Apply Fix for flutter_local_notifications Conflict
+        script: |
+            NOTIFICATIONS_FILE="$(find $FLUTTER_ROOT/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' | head -n 1)"
+            if [ -f "$NOTIFICATIONS_FILE" ]; then
+              echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
+              sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
+            else
+              echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
       - *build_apk_release
     artifacts:
       - *android_apk
