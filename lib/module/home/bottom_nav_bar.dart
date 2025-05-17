@@ -9,14 +9,14 @@ class CustomBottomNavBar extends StatelessWidget {
   final Color unselectedItemColor;
 
   const CustomBottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.menuItems,
     required this.onTap,
     required this.backgroundColor,
     required this.selectedItemColor,
     required this.unselectedItemColor,
-  }) : super(key: key);
+  });
 
   IconData _getIconByName(String? iconName) {
     switch (iconName?.toLowerCase()) {

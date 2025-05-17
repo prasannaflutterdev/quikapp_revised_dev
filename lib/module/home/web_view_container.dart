@@ -10,12 +10,12 @@ class WebViewContainer extends StatefulWidget {
   final Function(InAppWebViewController)? onWebViewCreated;
 
   const WebViewContainer({
-    Key? key,
+    super.key,
     required this.initialUrl,
     this.isDeeplink = false,
     this.isLoadIndicator = true,
     this.onWebViewCreated,
-  }) : super(key: key);
+  });
 
   @override
   State<WebViewContainer> createState() => _WebViewContainerState();

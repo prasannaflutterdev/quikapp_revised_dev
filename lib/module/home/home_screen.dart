@@ -6,7 +6,7 @@ import 'web_view_container.dart';
 import 'bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -67,14 +67,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final webUrl = const String.fromEnvironment('WEB_URL', defaultValue: '');
-    final isDeeplink =
+    const webUrl = String.fromEnvironment('WEB_URL', defaultValue: '');
+    const isDeeplink =
         const String.fromEnvironment('IS_DEEPLINK', defaultValue: 'false') ==
             'true';
-    final isLoadIndicator =
+    const isLoadIndicator =
         const String.fromEnvironment('IS_LOAD_IND', defaultValue: 'true') ==
             'true';
-    final isBottomMenu =
+    const isBottomMenu =
         const String.fromEnvironment('IS_BOTTOMMENU', defaultValue: 'false') ==
             'true';
 

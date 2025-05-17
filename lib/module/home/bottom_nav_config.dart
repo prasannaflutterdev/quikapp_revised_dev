@@ -36,11 +36,11 @@ class BottomNavConfig {
   }
 
   factory BottomNavConfig.fromEnvironment() {
-    final isEnabled =
+    const isEnabled =
         const String.fromEnvironment('IS_BOTTOMMENU', defaultValue: 'false') ==
             'true';
-    final menuItemsJson =
-        const String.fromEnvironment('BOTTOMMENU_ITEMS', defaultValue: '[]');
+    const menuItemsJson =
+        String.fromEnvironment('BOTTOMMENU_ITEMS', defaultValue: '[]');
     final List<dynamic> menuItemsList = json.decode(menuItemsJson);
 
     return BottomNavConfig(

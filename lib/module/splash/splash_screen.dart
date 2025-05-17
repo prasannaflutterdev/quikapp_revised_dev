@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -84,8 +84,8 @@ class _SplashScreenState extends State<SplashScreen>
         'SPLASH_BG_COLOR',
         defaultValue: '#FFFFFF'));
 
-    final splashTagline =
-        const String.fromEnvironment('SPLASH_TAGLINE', defaultValue: 'Welcome');
+    const splashTagline =
+        String.fromEnvironment('SPLASH_TAGLINE', defaultValue: 'Welcome');
 
     final splashTaglineColor = _parseHexColor(const String.fromEnvironment(
         'SPLASH_TAGLINE_COLOR',

@@ -106,8 +106,8 @@ class EnvConfig {
   // Bottom Menu Configuration
   List<Map<String, String>> get bottomMenuItems {
     try {
-      final String menuJson =
-          const String.fromEnvironment('BOTTOMMENU_ITEMS', defaultValue: '[]');
+      const String menuJson =
+          String.fromEnvironment('BOTTOMMENU_ITEMS', defaultValue: '[]');
       return (jsonDecode(menuJson) as List)
           .map((item) => Map<String, String>.from(item))
           .toList();
