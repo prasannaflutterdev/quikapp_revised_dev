@@ -1665,12 +1665,16 @@ workflows:
       - *Update_App_Version
       - name: Apply Fix for flutter_local_notifications Conflict
         script: |
-          NOTIFICATIONS_FILE="$(find $FLUTTER_ROOT/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' | head -n 1)"
-          if [ -f "$NOTIFICATIONS_FILE" ]; then
-            echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
-            sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
+          # Determine the correct path for .pub-cache in Codemagic
+          NOTIFICATIONS_FILE="$(find $HOME/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' | head -n 1)"
+          
+          if [ -n "$NOTIFICATIONS_FILE" ]; then
+          echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
+          sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
           else
-            echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
+          echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
+          fi
+
       - *build_apk
     artifacts:
       - *android_apk
