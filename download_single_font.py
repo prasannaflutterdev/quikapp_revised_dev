@@ -6,36 +6,38 @@ from pathlib import Path
 def download_font(font_name):
     print(f"🔍 Downloading {font_name} font...")
     
-    # Create fonts directory
-    fonts_dir = Path('assets/fonts')
-    fonts_dir.mkdir(parents=True, exist_ok=True)
-    os.chdir(fonts_dir)
+    # Get the script directory
+    script_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     
-    # Font URL mapping
+    # Create fonts directory relative to script directory
+    fonts_dir = script_dir / 'assets' / 'fonts'
+    fonts_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Font URL mapping using Google Fonts CDN
     font_urls = {
         'Roboto': {
-            'Regular': 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/static/Roboto-Regular.ttf',
-            'Medium': 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/static/Roboto-Medium.ttf',
-            'Bold': 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/static/Roboto-Bold.ttf'
+            'Regular': 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2',
+            'Medium': 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fChc4AMP6lbBP.woff2',
+            'Bold': 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfChc4AMP6lbBP.woff2'
         },
         'OpenSans': {
-            'Regular': 'https://raw.githubusercontent.com/google/fonts/main/apache/opensans/static/OpenSans-Regular.ttf',
-            'Medium': 'https://raw.githubusercontent.com/google/fonts/main/apache/opensans/static/OpenSans-Medium.ttf',
-            'Bold': 'https://raw.githubusercontent.com/google/fonts/main/apache/opensans/static/OpenSans-Bold.ttf'
+            'Regular': 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4n.ttf',
+            'Medium': 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjr0C4n.ttf',
+            'Bold': 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1y4n.ttf'
         },
         'Inter': {
-            'Regular': 'https://raw.githubusercontent.com/google/fonts/main/ofl/inter/static/Inter-Regular.ttf',
-            'Medium': 'https://raw.githubusercontent.com/google/fonts/main/ofl/inter/static/Inter-Medium.ttf',
-            'Bold': 'https://raw.githubusercontent.com/google/fonts/main/ofl/inter/static/Inter-Bold.ttf'
+            'Regular': 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.ttf',
+            'Medium': 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fMZg.ttf',
+            'Bold': 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZg.ttf'
         },
         'DMSans': {
-            'Regular': 'https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/static/DMSans-Regular.ttf',
-            'Medium': 'https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/static/DMSans-Medium.ttf',
-            'Bold': 'https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/static/DMSans-Bold.ttf'
+            'Regular': 'https://fonts.gstatic.com/s/dmsans/v14/rP2Hp2ywxg089UriOZQ.ttf',
+            'Medium': 'https://fonts.gstatic.com/s/dmsans/v14/rP2Cp2ywxg089UriAWCrOB8.ttf',
+            'Bold': 'https://fonts.gstatic.com/s/dmsans/v14/rP2Cp2ywxg089UriASitOB8.ttf'
         },
         'Lato': {
-            'Regular': 'https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Regular.ttf',
-            'Bold': 'https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Bold.ttf'
+            'Regular': 'https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHvxk.ttf',
+            'Bold': 'https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh6UVew8.ttf'
         },
         'SourceSans3': {
             'Regular': 'https://raw.githubusercontent.com/google/fonts/main/ofl/sourcesans3/static/SourceSans3-Regular.ttf',
@@ -72,20 +74,27 @@ def download_font(font_name):
     # Download font files
     for weight, url in font_urls[font_name].items():
         filename = f"{font_name}-{weight}.ttf"
+        filepath = fonts_dir / filename
         print(f"📥 Downloading {filename}...")
         
         try:
             response = requests.get(url)
             response.raise_for_status()
             
-            with open(filename, 'wb') as f:
+            with open(filepath, 'wb') as f:
                 f.write(response.content)
             print(f"✅ Downloaded {filename}")
+            
+            # Verify file exists and has content
+            if not filepath.exists() or filepath.stat().st_size == 0:
+                raise Exception(f"File {filename} was not downloaded correctly")
+                
         except Exception as e:
             print(f"❌ Failed to download {filename}: {str(e)}")
             sys.exit(1)
     
     print(f"✅ Successfully downloaded {font_name} font files")
+    print(f"📁 Font files are located in: {fonts_dir}")
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

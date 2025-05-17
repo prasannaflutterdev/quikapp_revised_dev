@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/env_config.dart';
 import 'web_view_container.dart';
 import 'bottom_nav_bar.dart';
@@ -129,7 +130,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const String.fromEnvironment('BOTTOMMENU_ICON_COLOR',
                       defaultValue: '#888888'),
                 ),
-                fontFamily: config.bottomMenuFont,
+                fontFamily:
+                    GoogleFonts.getFont(config.bottomMenuFont).fontFamily ??
+                        'Roboto',
                 fontSize: config.bottomMenuFontSize,
                 fontWeight: config.bottomMenuFontBold
                     ? FontWeight.bold
