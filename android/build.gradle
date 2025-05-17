@@ -4,21 +4,39 @@ buildscript {
         google()
         mavenCentral()
     }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
 
 allprojects {
     repositories {
         google()
         mavenCentral()
+        // Add jcenter() for older dependencies if needed
+        jcenter() // Warning: this repository is going to shut down soon
     }
 }
 
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(":app")
+
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            android {
+                compileSdkVersion flutter.compileSdkVersion
+                
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
