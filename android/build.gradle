@@ -23,17 +23,19 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(":app")
+}
 
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            android {
-                compileSdkVersion flutter.compileSdkVersion
-                
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
+// Configure all Android sub-projects/modules
+subprojects {
+    project.evaluationDependsOn(":app")
+    
+    if (project.hasProperty("android")) {
+        android {
+            compileSdkVersion flutter.compileSdkVersion
+            
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
             }
         }
     }
