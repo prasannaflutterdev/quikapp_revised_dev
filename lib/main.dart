@@ -8,6 +8,13 @@ import 'services/permission_service.dart';
 import 'config/env_config.dart';
 import 'config/config_validator.dart';
 import 'services/error_handling_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +44,23 @@ Future<void> main() async {
   // Initialize Firebase if push notifications are enabled
   if (config.isPushEnabled) {
     await errorHandler.wrapError('main.initializeFirebase', () async {
-      await FirebaseService.instance.initialize();
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+
+      await FlutterLocalNotificationsPlugin().initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
+        ),
+      );
+
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
       await NotificationService.instance.init();
       debugPrint('✅ Firebase and notifications initialized successfully');
     });
@@ -123,14 +146,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontFamily: 'Roboto'),
-          bodyMedium: TextStyle(fontFamily: 'Roboto'),
-          titleLarge: TextStyle(fontFamily: 'Roboto'),
-          titleMedium: TextStyle(fontFamily: 'Roboto'),
-          titleSmall: TextStyle(fontFamily: 'Roboto'),
-        ),
       ),
       home: config.isSplashEnabled ? const SplashScreen() : const HomeScreen(),
     );

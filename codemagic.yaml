@@ -4,6 +4,7 @@ definitions:
   # max_build_duration: 60
 
   environment:
+    java: 17
     app_details:
       vars:
         VERSION_NAME: $VERSION_NAME
@@ -1671,11 +1672,12 @@ definitions:
         fi
 workflows:
   apk-workflow:
-    name: Android Workflow Free & Paid APK
+    name: Android Workflow Free & Paid APK (Local Testing)
     max_build_duration: 30
     instance_type: mac_mini_m1
     environment:
       flutter: stable
+      java: 17
     scripts:
       - *change_proj_name
       - *debug_env
@@ -1687,7 +1689,6 @@ workflows:
       - *get_logo
       - *set_launcher_icons
       - *get_splash
-      #      - *key_store
       - *Update_App_Version
       - name: Apply Fix for flutter_local_notifications Conflict
         script: |
@@ -1700,21 +1701,19 @@ workflows:
             else
               echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
             fi
-
       - *build_apk
     artifacts:
       - *android_apk
-      #      - *android_abb
       - flutter_build_apk.log
-    #      - flutter_build_aab.log
     publishing: *email_release
 
   android-workflow:
-    name: Android Workflow Release APK
+    name: Android Workflow Release APK & AAB (Play Store)
     max_build_duration: 30
     instance_type: mac_mini_m1
     environment:
       flutter: stable
+      java: 17
     scripts:
       - *change_proj_name
       - *debug_env
@@ -1730,16 +1729,15 @@ workflows:
       - *key_store
       - name: Apply Fix for flutter_local_notifications Conflict
         script: |
-            echo "Looking for FlutterLocalNotificationsPlugin.java..."
-            NOTIFICATIONS_FILE="$(find $FCI_BUILD_DIR/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || find $HOME/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || echo '')"
-            if [ -f "$NOTIFICATIONS_FILE" ]; then
-              echo "Found plugin at: $NOTIFICATIONS_FILE"
-              echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
-              sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
-              echo "Fix applied successfully"
-            else
-              echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
-            fi
+          NOTIFICATIONS_FILE="$(find $FCI_BUILD_DIR/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || find $HOME/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || echo '')"
+          if [ -f "$NOTIFICATIONS_FILE" ]; then
+            echo "Found plugin at: $NOTIFICATIONS_FILE"
+            echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
+            sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
+            echo "Fix applied successfully"
+          else
+            echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
+          fi
       - *build_apk_release
     artifacts:
       - *android_apk
@@ -1749,7 +1747,7 @@ workflows:
     publishing: *email_release
 
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Workflow (App Store)
     max_build_duration: 30
     instance_type: mac_mini_m1
     environment:
@@ -1772,51 +1770,8 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      - name: Set up code signing
-        script: |
-          echo "🔐 Setting up iOS code signing..."
-
-          # Create keychain
-          KEYCHAIN_NAME="ios-build.keychain"
-          KEYCHAIN_PASSWORD="temporary"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
-
-          # Import certificate
-          echo "📥 Importing certificate..."
-          security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-
-          # Set up provisioning profile
-          echo "📱 Setting up provisioning profile..."
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-
-          # Get profile UUID
-          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-          echo "✅ Profile UUID: $PROFILE_UUID"
-
-          # Move profile to correct location
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-
-      - name: iOS build
-        script: |
-          echo "🏗️ Building iOS app..."
-          cd ios
-          pod install
-          cd ..
-
-          # Build IPA
-          flutter build ipa \
-            --release \
-            --export-options-plist=ios/ExportOptions.plist
-            
-          # Clean up
-          security delete-keychain "$KEYCHAIN_NAME"
-          rm -f certificate.p12 profile.mobileprovision
-
+      - *setup_ios_signing_manual
+      - *build_ipa
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -1824,32 +1779,36 @@ workflows:
     publishing: *email_release
 
   ios-and-android-workflow:
-    name: ios and android workflow
+    name: iOS and Android Workflow (Both Stores)
     max_build_duration: 30
     instance_type: mac_mini_m1
     environment:
       flutter: stable
+      xcode: latest
+      cocoapods: default
+      java: 17
     scripts:
-      #      - *pub_get
       - *debug_env
       - *change_app_name
       - *Inject_Firebase_iOS_Push
       - *Inject_Firebase
       - *update_package_names
-      #      - *set_default_version
       - *Update_App_Version
       - *get_logo
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      - *build_apk
+      # Android Release Build
+      - *key_store
+      - *build_apk_release
+      # iOS Release Build
+      - *setup_ios_signing_manual
       - *build_ipa
     artifacts:
       - *android_apk
       - *android_abb
       - *ios_app
-      - flutter_build.log
-      - flutter_build2.log
-      - fcm_token.txt
-    #        - *android_abb
+      - flutter_build_apk.log
+      - flutter_build_aab.log
+      - flutter_build_ios.log
     publishing: *email_release

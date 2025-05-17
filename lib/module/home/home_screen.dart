@@ -24,6 +24,29 @@ class _HomeScreenState extends State<HomeScreen> {
       .map((item) => item.map((key, value) => MapEntry(key, value.toString())))
       .toList();
 
+  TextStyle _getCustomFont(EnvConfig config) {
+    try {
+      return GoogleFonts.getFont(
+        config.bottomMenuFont,
+        fontSize: config.bottomMenuFontSize,
+        fontWeight:
+            config.bottomMenuFontBold ? FontWeight.bold : FontWeight.normal,
+        fontStyle:
+            config.bottomMenuFontItalic ? FontStyle.italic : FontStyle.normal,
+      );
+    } catch (e) {
+      debugPrint('Error loading font: $e');
+      // Fallback to system default font
+      return TextStyle(
+        fontSize: config.bottomMenuFontSize,
+        fontWeight:
+            config.bottomMenuFontBold ? FontWeight.bold : FontWeight.normal,
+        fontStyle:
+            config.bottomMenuFontItalic ? FontStyle.italic : FontStyle.normal,
+      );
+    }
+  }
+
   Color _parseHexColor(String hexColor) {
     try {
       hexColor = hexColor.replaceAll('#', '');
@@ -71,16 +94,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     const webUrl = String.fromEnvironment('WEB_URL', defaultValue: '');
     const isDeeplink =
-        const String.fromEnvironment('IS_DEEPLINK', defaultValue: 'false') ==
-            'true';
+        String.fromEnvironment('IS_DEEPLINK', defaultValue: 'false') == 'true';
     const isLoadIndicator =
-        const String.fromEnvironment('IS_LOAD_IND', defaultValue: 'true') ==
-            'true';
+        String.fromEnvironment('IS_LOAD_IND', defaultValue: 'true') == 'true';
     const isBottomMenu =
-        const String.fromEnvironment('IS_BOTTOMMENU', defaultValue: 'false') ==
+        String.fromEnvironment('IS_BOTTOMMENU', defaultValue: 'false') ==
             'true';
 
     final config = EnvConfig.instance;
+    final customFont = _getCustomFont(config);
 
     return WillPopScope(
       onWillPop: _onBackPressed,
@@ -130,14 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const String.fromEnvironment('BOTTOMMENU_ICON_COLOR',
                       defaultValue: '#888888'),
                 ),
-                fontFamily:
-                    GoogleFonts.getFont(config.bottomMenuFont).fontFamily ??
-                        'Roboto',
-                fontSize: config.bottomMenuFontSize,
-                fontWeight: config.bottomMenuFontBold
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                isItalic: config.bottomMenuFontItalic,
+                textStyle: customFont,
               )
             : null,
       ),
