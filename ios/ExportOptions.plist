@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>ad-hoc</string>
+    <string>app-store</string>
     <key>signingStyle</key>
     <string>manual</string>
     <key>teamID</key>
-    <string>YOUR_TEAM_ID</string>
+    <string>${TEAM_ID}</string>
     <key>provisioningProfiles</key>
     <dict>
-        <key>YOUR.BUNDLE.ID</key>
-        <string>YOUR_PROVISIONING_PROFILE_NAME</string>
+        <key>${BUNDLE_ID}</key>
+        <string>${PROVISIONING_PROFILE_NAME}</string>
     </dict>
     <key>compileBitcode</key>
     <false/>
