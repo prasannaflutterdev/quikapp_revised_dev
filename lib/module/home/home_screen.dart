@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../config/env_config.dart';
 import 'web_view_container.dart';
 import 'bottom_nav_bar.dart';
 
@@ -78,6 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
         const String.fromEnvironment('IS_BOTTOMMENU', defaultValue: 'false') ==
             'true';
 
+    final config = EnvConfig.instance;
+
     return WillPopScope(
       onWillPop: _onBackPressed,
       child: Scaffold(
@@ -126,6 +129,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   const String.fromEnvironment('BOTTOMMENU_ICON_COLOR',
                       defaultValue: '#888888'),
                 ),
+                fontFamily: config.bottomMenuFont,
+                fontSize: config.bottomMenuFontSize,
+                fontWeight: config.bottomMenuFontBold
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                isItalic: config.bottomMenuFontItalic,
               )
             : null,
       ),

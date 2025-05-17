@@ -7,6 +7,10 @@ class CustomBottomNavBar extends StatelessWidget {
   final Color backgroundColor;
   final Color selectedItemColor;
   final Color unselectedItemColor;
+  final String fontFamily;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final bool isItalic;
 
   const CustomBottomNavBar({
     super.key,
@@ -16,6 +20,10 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.backgroundColor,
     required this.selectedItemColor,
     required this.unselectedItemColor,
+    required this.fontFamily,
+    required this.fontSize,
+    required this.fontWeight,
+    required this.isItalic,
   });
 
   IconData _getIconByName(String? iconName) {
@@ -46,6 +54,18 @@ class CustomBottomNavBar extends StatelessWidget {
       selectedItemColor: selectedItemColor,
       unselectedItemColor: unselectedItemColor,
       type: BottomNavigationBarType.fixed,
+      selectedLabelStyle: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fontWeight: FontWeight.normal,
+        fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
+      ),
       items: menuItems.map((item) {
         final isActive = currentIndex == menuItems.indexOf(item);
         return BottomNavigationBarItem(

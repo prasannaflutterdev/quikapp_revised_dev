@@ -123,6 +123,14 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         useMaterial3: true,
+        fontFamily: 'Roboto',
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(fontFamily: 'Roboto'),
+          bodyMedium: TextStyle(fontFamily: 'Roboto'),
+          titleLarge: TextStyle(fontFamily: 'Roboto'),
+          titleMedium: TextStyle(fontFamily: 'Roboto'),
+          titleSmall: TextStyle(fontFamily: 'Roboto'),
+        ),
       ),
       home: config.isSplashEnabled ? const SplashScreen() : const HomeScreen(),
     );
