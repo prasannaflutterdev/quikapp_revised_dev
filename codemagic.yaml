@@ -1041,7 +1041,111 @@ definitions:
         rm -f signing_cert.p12 profile.mobileprovision ExportOptions.plist
 
         echo "🎉 Done!"
+    - &install_ipa_file
+      name: Install Cert and profile in ipa
+      script: |
+        echo "🔐 Setting up iOS signing..."
 
+        # Create keychain
+        KEYCHAIN_NAME="ios-build.keychain"
+        KEYCHAIN_PASSWORD="temporary"
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+        security default-keychain -s "$KEYCHAIN_NAME"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+        security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
+
+        # Download and import certificate
+        echo "📥 Downloading certificate..."
+        if [ -z "$CERT_URL" ] || [ -z "$CERT_PASSWORD" ]; then
+          echo "❌ CERT_URL or CERT_PASSWORD not set"
+          exit 1
+        fi
+        curl -o certificate.p12 "$CERT_URL"
+
+        # Import certificate
+        echo "🔑 Importing certificate..."
+        security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+        # Extract certificate info
+        echo "🔍 Extracting certificate info..."
+        security find-identity -v -p codesigning "$KEYCHAIN_NAME"
+
+        # Download provisioning profile
+        echo "📥 Downloading provisioning profile..."
+        if [ -z "$PROFILE_URL" ]; then
+          echo "❌ PROFILE_URL not set"
+          exit 1
+        fi
+        curl -o profile.mobileprovision "$PROFILE_URL"
+
+        # Extract profile info
+        security cms -D -i profile.mobileprovision > profile.plist
+        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" profile.plist)
+        PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" profile.plist)
+        PROFILE_TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" profile.plist)
+        PROFILE_APP_ID_NAME=$(/usr/libexec/PlistBuddy -c "Print :AppIDName" profile.plist)
+        PROFILE_CREATION_DATE=$(/usr/libexec/PlistBuddy -c "Print :CreationDate" profile.plist)
+        PROFILE_EXPIRATION_DATE=$(/usr/libexec/PlistBuddy -c "Print :ExpirationDate" profile.plist)
+        echo "📱 Profile UUID: $PROFILE_UUID"
+        echo "📱 Profile Name: $PROFILE_NAME"
+        echo "🏢 Team ID: $PROFILE_TEAM_ID"
+        echo "📝 App ID Name: $PROFILE_APP_ID_NAME"
+        echo "📅 Creation Date: $PROFILE_CREATION_DATE"
+        echo "⏳ Expiration Date: $PROFILE_EXPIRATION_DATE"
+
+        # Install provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+
+        # Create ExportOptions.plist
+        echo "📝 Creating ExportOptions.plist..."
+        cat > ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>$PROFILE_TEAM_ID</string>
+            <key>provisioningProfiles</key>
+            <dict>
+                <key>$BUNDLE_ID</key>
+                <string>$PROFILE_NAME</string>
+            </dict>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>iPhone Distribution</string>
+        </dict>
+        </plist>
+        EOF
+
+        # Xcode build and export IPA
+        echo "🔧 Building IPA using xcodebuild..."
+        xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/Runner.xcarchive archive
+
+        # Export IPA
+        xcodebuild -exportArchive \
+            -archivePath build/Runner.xcarchive \
+            -exportPath build/IPA \
+            -exportOptionsPlist ExportOptions.plist
+
+        if [ $? -ne 0 ]; then
+          echo "❌ Failed to export IPA"
+          exit 1
+        fi
+
+        # Cleanup
+        echo "🧹 Cleaning up..."
+        security delete-keychain "$KEYCHAIN_NAME"
+        rm certificate.p12 profile.mobileprovision profile.plist ExportOptions.plist
+
+        echo "✅ iOS IPA build and signing completed."
     - &setup_ios_signing_manual
       name: Setting Up iOS Signing (Manual)
       script: |
@@ -1284,8 +1388,9 @@ workflows:
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      - *setup_ios_signing_manual
-      - *build_ipa
+      - *install_ipa_file
+#      - *setup_ios_signing_manual
+#      - *build_ipa
     artifacts:
       - *ios_app
       - flutter_build_ios.log
