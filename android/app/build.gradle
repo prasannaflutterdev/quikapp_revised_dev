@@ -29,37 +29,36 @@ android {
         jvmTarget = '17'
     }
 
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
     defaultConfig {
         applicationId = System.getenv("PKG_NAME") ?: "com.example.quickappproj"
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion flutter.targetSdkVersion
         versionCode = System.getenv("VERSION_CODE")?.toInteger() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
         
         // Enable multidex for large number of methods
         multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    signingConfigs {
-        release {
-            if (keystoreProperties.containsKey('storeFile')) {
-                storeFile = file(keystoreProperties['storeFile'])
-                storePassword = keystoreProperties['storePassword']
-                keyAlias = keystoreProperties['keyAlias']
-                keyPassword = keystoreProperties['keyPassword']
-            } else {
-                // Fallback to environment variables (Codemagic CI)
-                storeFile = file("keystore.jks")
-                storePassword = System.getenv("CM_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("CM_KEY_ALIAS")
-                keyPassword = System.getenv("CM_KEY_PASSWORD")
-            }
-        }
-    }
+//
+//    signingConfigs {
+//        if (System.getenv("CI")) { // CI=true is exported by Codemagic
+//            release {
+//                storeFile file(System.getenv("CM_KEYSTORE_PATH") ?: "keystore.jks")
+//                storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+//                keyAlias System.getenv("CM_KEY_ALIAS")
+//                keyPassword System.getenv("CM_KEY_PASSWORD")
+//            }
+//        }
+//    }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             
             // Enable minification and shrinking
             minifyEnabled true
@@ -68,7 +67,7 @@ android {
             multiDexKeepProguard file('multidex-config.pro')
         }
         debug {
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.debug
             // Disable minification for debug builds
             minifyEnabled false
             shrinkResources false
@@ -90,6 +89,8 @@ dependencies {
     
     // Add Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:32.7.4')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
 }
 
 flutter {
