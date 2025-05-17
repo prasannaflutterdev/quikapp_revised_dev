@@ -26,9 +26,17 @@ class LocalNotificationService {
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
-        onDidReceiveLocalNotification: (id, title, body, payload) async {
-          debugPrint('Received iOS local notification: $title');
-        },
+        notificationCategories: [
+          DarwinNotificationCategory(
+            'default',
+            actions: [
+              DarwinNotificationAction.plain('id_1', 'Action 1'),
+            ],
+            options: {
+              DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+            },
+          )
+        ],
       );
 
       final initializationSettings = InitializationSettings(

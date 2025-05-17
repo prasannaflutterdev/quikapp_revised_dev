@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 class WebViewContainer extends StatefulWidget {
   final String initialUrl;
@@ -56,10 +56,14 @@ class _WebViewContainerState extends State<WebViewContainer> {
           return false;
         }
       } else {
-        Fluttertoast.showToast(
-          msg: "External links are disabled",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
+        showToast(
+          'No internet connection',
+          context: context,
+          backgroundColor: Colors.red,
+          textStyle: TextStyle(color: Colors.white),
+          duration: Duration(seconds: 3),
+          position: StyledToastPosition.bottom,
+          animation: StyledToastAnimation.fade,
         );
         return false;
       }

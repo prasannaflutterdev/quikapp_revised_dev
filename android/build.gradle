@@ -8,6 +8,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.1'
     }
 }
 
@@ -15,8 +16,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Add jcenter() for older dependencies if needed
-        jcenter() // Warning: this repository is going to shut down soon
     }
 }
 
@@ -31,8 +30,6 @@ subprojects {
     
     if (project.hasProperty("android")) {
         android {
-            compileSdkVersion flutter.compileSdkVersion
-            
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17

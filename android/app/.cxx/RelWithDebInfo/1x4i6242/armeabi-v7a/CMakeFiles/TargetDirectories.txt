@@ -1,0 +1,2 @@
+/Users/alakaraj/Downloads/quikapp_revised_dev/android/app/.cxx/RelWithDebInfo/1x4i6242/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/alakaraj/Downloads/quikapp_revised_dev/android/app/.cxx/RelWithDebInfo/1x4i6242/armeabi-v7a/CMakeFiles/rebuild_cache.dir

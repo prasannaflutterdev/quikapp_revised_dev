@@ -1061,7 +1061,7 @@ definitions:
           exit 1
         fi
         curl -o certificate.p12 "$CERT_URL"
-        
+
         echo "🔑 Importing certificate..."
         security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
@@ -1078,7 +1078,7 @@ definitions:
         security cms -D -i profile.mobileprovision > profile.plist
         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" profile.plist)
         PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" profile.plist)
-        
+
         echo "📱 Profile UUID: $PROFILE_UUID"
         echo "📱 Profile Name: $PROFILE_NAME"
 
@@ -1089,7 +1089,7 @@ definitions:
         # Update Xcode project settings
         echo "📝 Updating Xcode project settings..."
         /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" ios/Runner/Info.plist
-        
+
         # Create ExportOptions.plist
         cat > ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
@@ -1197,37 +1197,47 @@ definitions:
           echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
           exit 1
         fi
+
+    - &firebase_setup
+      name: Firebase and Push Notification Setup
+      script: |
+        if [ "$PUSH_NOTIFY" = "true" ]; then
+          echo "🔔 Setting up Firebase and Push Notifications..."
+          
+          # Make scripts executable
+          chmod +x scripts/firebase_android_setup.sh
+          chmod +x scripts/firebase_ios_setup.sh
+          
+          # Run platform-specific setup
+          if [ "$PLATFORM" = "android" ] || [ "$PLATFORM" = "both" ]; then
+            ./scripts/firebase_android_setup.sh
+          fi
+          
+          if [ "$PLATFORM" = "ios" ] || [ "$PLATFORM" = "both" ]; then
+            ./scripts/firebase_ios_setup.sh
+          fi
+          
+          echo "✅ Firebase setup completed for platform: $PLATFORM"
+        else
+          echo "⏭️ Skipping Firebase setup (PUSH_NOTIFY != true)"
+        fi
+
 workflows:
   apk-workflow:
-    name: Android Workflow Free & Paid APK (Local Testing)
-    max_build_duration: 30
-    instance_type: mac_mini_m1
+    name: APK Build Workflow
     environment:
-      flutter: stable
-      java: 17
+      vars:
+        PLATFORM: "android"
     scripts:
-      - *change_proj_name
       - *debug_env
-      - *update_package_names
+      - *firebase_setup
       - *change_app_name
-      - *Update_SDK_Version
-      - *get_json
-      - *Inject_Firebase
+      - *update_package_names
+      - *Update_App_Version
       - *get_logo
       - *set_launcher_icons
       - *get_splash
-      - *Update_App_Version
-      - name: Apply Fix for flutter_local_notifications Conflict
-        script: |
-          NOTIFICATIONS_FILE="$(find $FCI_BUILD_DIR/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || find $HOME/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || echo '')"
-            if [ -f "$NOTIFICATIONS_FILE" ]; then
-              echo "Found plugin at: $NOTIFICATIONS_FILE"
-              echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
-              sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
-              echo "Fix applied successfully"
-            else
-              echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
-            fi
+      - *Update_SDK_Version
       - *build_apk
     artifacts:
       - *android_apk
@@ -1235,36 +1245,21 @@ workflows:
     publishing: *email_release
 
   android-workflow:
-    name: Android Workflow Release APK & AAB (Play Store)
-    max_build_duration: 30
-    instance_type: mac_mini_m1
+    name: Android Workflow (Play Store)
     environment:
-      flutter: stable
-      java: 17
+      vars:
+        PLATFORM: "android"
     scripts:
-      - *change_proj_name
       - *debug_env
-      - *update_package_names
+      - *firebase_setup
       - *change_app_name
-      - *Update_SDK_Version
-      - *get_json
-      - *Inject_Firebase
+      - *update_package_names
+      - *Update_App_Version
       - *get_logo
       - *set_launcher_icons
       - *get_splash
-      - *Update_App_Version
+      - *Update_SDK_Version
       - *key_store
-      - name: Apply Fix for flutter_local_notifications Conflict
-        script: |
-          NOTIFICATIONS_FILE="$(find $FCI_BUILD_DIR/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || find $HOME/.pub-cache -type f -name 'FlutterLocalNotificationsPlugin.java' 2>/dev/null || echo '')"
-          if [ -f "$NOTIFICATIONS_FILE" ]; then
-            echo "Found plugin at: $NOTIFICATIONS_FILE"
-            echo "Applying fix to FlutterLocalNotificationsPlugin.java..."
-            sed -i 's/bigPictureStyle\.bigLargeIcon(null);/bigPictureStyle.bigLargeIcon((Bitmap) null);/' "$NOTIFICATIONS_FILE"
-            echo "Fix applied successfully"
-          else
-            echo "FlutterLocalNotificationsPlugin.java not found. Skipping fix."
-          fi
       - *build_apk_release
     artifacts:
       - *android_apk
@@ -1275,22 +1270,13 @@ workflows:
 
   ios-workflow:
     name: iOS Workflow (App Store)
-    max_build_duration: 30
-    instance_type: mac_mini_m1
     environment:
       vars:
-        XCODE_WORKSPACE: "Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
-        LANG: en_US.UTF-8
-        LC_ALL: en_US.UTF-8
-      flutter: stable
-      xcode: latest
-      cocoapods: default
+        PLATFORM: "ios"
     scripts:
-      - *change_proj_name
       - *debug_env
+      - *firebase_setup
       - *change_app_name
-      - *Inject_iOS_Firebase_Push
       - *update_package_names
       - *Update_App_Version
       - *get_logo
@@ -1300,35 +1286,27 @@ workflows:
       - *setup_ios_signing_manual
       - *build_ipa
     artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
+      - *ios_app
+      - flutter_build_ios.log
     publishing: *email_release
 
   ios-and-android-workflow:
     name: iOS and Android Workflow (Both Stores)
-    max_build_duration: 30
-    instance_type: mac_mini_m1
     environment:
-      flutter: stable
-      xcode: latest
-      cocoapods: default
-      java: 17
+      vars:
+        PLATFORM: "both"
     scripts:
       - *debug_env
+      - *firebase_setup
       - *change_app_name
-      - *Inject_Firebase_iOS_Push
-      - *Inject_Firebase
       - *update_package_names
       - *Update_App_Version
       - *get_logo
       - *set_launcher_icons
       - *get_splash
       - *Update_SDK_Version
-      # Android Release Build
       - *key_store
       - *build_apk_release
-      # iOS Release Build
       - *setup_ios_signing_manual
       - *build_ipa
     artifacts:

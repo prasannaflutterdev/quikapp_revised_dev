@@ -12,8 +12,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  if (EnvConfig.instance.isPushEnabled) {
+    await Firebase.initializeApp();
+    debugPrint('Handling a background message: ${message.messageId}');
+    await NotificationService.instance.showNotification(
+      title: message.notification?.title ?? 'New Message',
+      body: message.notification?.body ?? '',
+      payload: message.data.toString(),
+      imageUrl:
+          message.notification?.android?.imageUrl ?? message.data['image'],
+    );
+  }
 }
 
 Future<void> main() async {
@@ -44,26 +55,39 @@ Future<void> main() async {
   // Initialize Firebase if push notifications are enabled
   if (config.isPushEnabled) {
     await errorHandler.wrapError('main.initializeFirebase', () async {
-      await Firebase.initializeApp();
+      // Initialize Firebase first
+      await FirebaseService.instance.initialize();
+
+      // Set up background message handler
       FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler);
 
+      // Initialize local notifications
       await FlutterLocalNotificationsPlugin().initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-          iOS: DarwinInitializationSettings(),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          ),
         ),
       );
 
+      // Configure foreground notification presentation
       await FirebaseMessaging.instance
           .setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
         sound: true,
       );
+
+      // Initialize notification service
       await NotificationService.instance.init();
       debugPrint('✅ Firebase and notifications initialized successfully');
     });
+  } else {
+    debugPrint('⏭️ Skipping Firebase initialization (PUSH_NOTIFY != true)');
   }
 
   // Debug configuration

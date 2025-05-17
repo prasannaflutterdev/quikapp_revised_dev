@@ -3,7 +3,7 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
-    // id 'com.google.gms.google-services'
+    id 'com.google.gms.google-services'
 }
 
 def keystoreProperties = new Properties()
@@ -86,6 +86,9 @@ dependencies {
     
     // Add multidex support
     implementation 'androidx.multidex:multidex:2.0.1'
+    
+    // Add Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:32.7.4')
 }
 
 flutter {

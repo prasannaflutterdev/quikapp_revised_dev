@@ -90,18 +90,33 @@ class EnvConfig {
       3;
 
   // Firebase Configuration
-  String get firebaseConfigAndroid =>
-      const String.fromEnvironment('firebase_config_android', defaultValue: '');
-  String get firebaseConfigIOS =>
-      const String.fromEnvironment('firebase_config_ios', defaultValue: '');
+  String get firebaseConfigAndroid {
+    if (!isPushEnabled) return '';
+    return const String.fromEnvironment('firebase_config_android',
+        defaultValue: '');
+  }
+
+  String get firebaseConfigIOS {
+    if (!isPushEnabled) return '';
+    return const String.fromEnvironment('firebase_config_ios',
+        defaultValue: '');
+  }
 
   // iOS Configuration
-  String get appleTeamId =>
-      const String.fromEnvironment('APPLE_TEAM_ID', defaultValue: '');
-  String get apnsKeyId =>
-      const String.fromEnvironment('APNS_KEY_ID', defaultValue: '');
-  String get apnsAuthKeyUrl =>
-      const String.fromEnvironment('APNS_AUTH_KEY_URL', defaultValue: '');
+  String get appleTeamId {
+    if (!isPushEnabled) return '';
+    return const String.fromEnvironment('APPLE_TEAM_ID', defaultValue: '');
+  }
+
+  String get apnsKeyId {
+    if (!isPushEnabled) return '';
+    return const String.fromEnvironment('APNS_KEY_ID', defaultValue: '');
+  }
+
+  String get apnsAuthKeyUrl {
+    if (!isPushEnabled) return '';
+    return const String.fromEnvironment('APNS_AUTH_KEY_URL', defaultValue: '');
+  }
 
   // Bottom Menu Configuration
   List<Map<String, String>> get bottomMenuItems {

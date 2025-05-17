@@ -21,53 +21,84 @@ if [ "$PUSH_NOTIFY" = "true" ]; then
     exit 1
   fi
 
-  # 2. Add Firebase SDK via Package.resolved (if pre-committed)
-  if [ -f "firebase/ios/Package.resolved" ]; then
-    mkdir -p ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
-    cp firebase/ios/Package.resolved ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-    echo "📦 Firebase SDK resolved from committed Package.resolved."
-  else
-    echo "⚠️ Package.resolved not found. Firebase SDK must be added manually in Xcode."
-  fi
+  # 2. Update Info.plist for push notifications
+  PLIST_FILE="ios/Runner/Info.plist"
+  
+  # Add background modes for push notifications
+  /usr/libexec/PlistBuddy -c "Delete :UIBackgroundModes" "$PLIST_FILE" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST_FILE"
+  /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string 'remote-notification'" "$PLIST_FILE"
+  
+  # Add Firebase configuration
+  /usr/libexec/PlistBuddy -c "Delete :FirebaseAppDelegateProxyEnabled" "$PLIST_FILE" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :FirebaseAppDelegateProxyEnabled bool false" "$PLIST_FILE"
 
-  # 3. Download APNs Auth Key (Optional)
-  if [ -n "$APNS_AUTH_KEY_URL" ]; then
-    wget -O firebase/ios/AuthKey.p8 "$APNS_AUTH_KEY_URL"
-    echo "📥 Downloaded AuthKey.p8 for APNs."
-  fi
-
-  # 4. APNs Entitlements Setup
-  BUILD_MODE=${BUILD_MODE:-debug}  # fallback to debug if not set
-  if [ "$BUILD_MODE" = "release" ]; then
-    APS_ENV="production"
-  else
-    APS_ENV="development"
-  fi
-
-  if [ ! -f "ios/Runner/Runner.entitlements" ]; then
-    echo "📝 Creating Runner.entitlements with aps-environment = $APS_ENV"
-    cat <<EOF > ios/Runner/Runner.entitlements
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>aps-environment</key>
-  <string>$APS_ENV</string>
-</dict>
-</plist>
+  # 3. Download APNs Auth Key if provided
+  if [ -n "$APNS_AUTH_KEY_URL" ] && [ -n "$APNS_KEY_ID" ] && [ -n "$APPLE_TEAM_ID" ]; then
+    echo "📥 Downloading APNs Auth Key..."
+    mkdir -p ios/Runner/APNs
+    wget -O ios/Runner/APNs/AuthKey_$APNS_KEY_ID.p8 "$APNS_AUTH_KEY_URL"
+    
+    # Create APNs configuration file
+    cat > ios/Runner/APNs/config.json << EOF
+{
+  "team_id": "$APPLE_TEAM_ID",
+  "key_id": "$APNS_KEY_ID",
+  "app_bundle_id": "$BUNDLE_ID"
+}
 EOF
-  else
-    if grep -q "aps-environment" ios/Runner/Runner.entitlements; then
-      echo "✅ APNs entitlements already enabled."
-    else
-      echo "⚠️ Warning: aps-environment key missing in existing Runner.entitlements."
-    fi
+    echo "✅ APNs configuration completed"
   fi
 
+  # 4. Update Podfile for Firebase
+  PODFILE="ios/Podfile"
+  if [ -f "$PODFILE" ]; then
+    echo "📝 Updating Podfile..."
+    
+    # Set minimum iOS version to 13.0
+    sed -i '' 's/platform :ios, .*/platform :ios, '\''13.0'\''/' "$PODFILE"
+    
+    # Add Firebase pods if not present
+    if ! grep -q "pod 'Firebase/Messaging'" "$PODFILE"; then
+      cat >> "$PODFILE" << EOF
+
+# Firebase dependencies
+pod 'Firebase/Core'
+pod 'Firebase/Messaging'
+pod 'Firebase/Analytics'
+EOF
+    fi
+    
+    echo "✅ Podfile updated"
+  fi
+
+  # 5. Create Firebase configuration file
+  cat > ios/Runner/Firebase.swift << EOF
+import Foundation
+import Firebase
+
+class FirebaseConfiguration {
+    static func configure() {
+        FirebaseApp.configure()
+        
+        // Configure Firebase Messaging
+        Messaging.messaging().delegate = UIApplication.shared.delegate as? MessagingDelegate
+        
+        // Request permission for notifications
+        UNUserNotificationCenter.current().delegate = UIApplication.shared.delegate as? UNUserNotificationCenterDelegate
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { _, _ in }
+        
+        UIApplication.shared.registerForRemoteNotifications()
+    }
+}
+EOF
+
+  echo "✅ Firebase iOS setup completed successfully."
 else
-  echo "🚫 PUSH_NOTIFY is false. Skipping Firebase iOS setup."
+  echo "⏭️ Skipping Firebase setup (PUSH_NOTIFY != true)"
+  # Clean up any existing Firebase files if push notifications are disabled
   rm -f ios/Runner/GoogleService-Info.plist
-  rm -f ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  echo "🧹 Cleaned up Firebase iOS configuration files."
+  rm -rf ios/Runner/APNs
+  rm -f ios/Runner/Firebase.swift
 fi
