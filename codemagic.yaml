@@ -569,7 +569,7 @@ definitions:
     - &build_ipa
       name: Building iOS App with Feature Flags
       script: |
-        if [ ! -f signing_cert.p12 ] || [ ! -f profile.mobileprovision ]; then
+        if [ ! -f ios/Certificates/signing_cert.p12 ] || [ ! -f ios/Certificates/profile.mobileprovision ]; then
         echo "❌ Error: Certificates or provisioning profile missing."
         exit 1
         fi
